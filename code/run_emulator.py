@@ -1,22 +1,28 @@
 from emulator import EmulatorMLP
 
 statistic = 'xi'
-train_tag = ''
-predictions_dir = f'../predictions_{statistic}_MLP{train_tag}'
-model_fn = f'../models/model_{statistic}_MLP{train_tag}.joblib'
+emu_name = 'MLP'
+train_tag = f'_{emu_name}'
+predictions_dir = f'../predictions_{statistic}{train_tag}'
+model_fn = f'../models/model_{statistic}{train_tag}.joblib'
+scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
+scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
 
-emu = EmulatorMLP(statistic)
+emu_dict = {'MLP': EmulatorMLP}
+Emu = emu_dict[emu_name]
+print("Constructing emu")
+emu = Emu(statistic, model_fn, scaler_x_fn, scaler_y_fn)
 
-print("Setting training data")
-emu.set_training_data()
+#print("Setting training data")
+#emu.set_training_data()
 print("Training")
 emu.train()
-emu.save_model(model_fn)
+emu.save_model()
 
-print("Setting testing data")
-emu.set_testing_data()
+#print("Setting testing data")
+#emu.set_testing_data()
 print("Testing")
-emu.load_model(model_fn)
+emu.load_model()
 emu.test()
 print("Saving predictions")
 emu.save_predictions(predictions_dir)

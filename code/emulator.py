@@ -3,27 +3,31 @@ import numpy as np
 
 import joblib
 from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler, FunctionTransformer  
+
 
 class Emulator(object):
 
-    def __init__(self, statistic):
+    def __init__(self, statistic, model_fn, scaler_x_fn, scaler_y_fn, 
+                 train_mode=True, test_mode=True):
         self.statistic = statistic
-        self.set_training_data()
-
+        self.model_fn = model_fn
+        self.scaler_x_fn = scaler_x_fn
+        self.scaler_y_fn = scaler_y_fn
+        if train_mode:
+            self.set_training_data()
+            self.scale_training_data()
+            self.save_scalers()
+        if test_mode:
+            self.set_testing_data()
+            self.load_scalers()
+            self.scale_testing_data()
 
     def set_training_data(self):
         
         ### ID values (cosmo and hod numbers)
-
-        self.id_pairs_train = []
-        ids_cosmo = range(40)
-        n_hods_per_cosmo = 100
-        for id_cosmo in ids_cosmo:
-            id_hod_min = id_cosmo * n_hods_per_cosmo
-            id_hod_max = id_hod_min + n_hods_per_cosmo
-            ids_hod = range(id_hod_min, id_hod_max)
-            for id_hod in ids_hod:
-                self.id_pairs_train.append((id_cosmo, id_hod))
+        fn_train = '../tables/id_pairs_train.txt'
+        self.id_pairs_train = np.loadtxt(fn_train, delimiter=',', dtype=int)
         self.n_train = len(self.id_pairs_train)
 
         ### x values (data, cosmo and hod values)
@@ -63,14 +67,9 @@ class Emulator(object):
     def set_testing_data(self):
 
         ### ID values (cosmo and hod numbers)
-
-        self.id_pairs_test = []
-        ids_cosmo = range(7)
-        ids_hod = range(100)
-        for id_cosmo in ids_cosmo:
-            for id_hod in ids_hod:
-                self.id_pairs_test.append((id_cosmo, id_hod))
-        self.n_test = len(self.id_pairs_test)
+        fn_test = '../tables/id_pairs_test.txt'
+        self.id_pairs_test = np.loadtxt(fn_test, delimiter=',', dtype=int)
+        self.n_test = self.id_pairs_test.shape[0]
 
         ### x values (data, cosmo and hod values)
 
@@ -104,6 +103,31 @@ class Emulator(object):
             _, y = np.loadtxt(y_test_fn, delimiter=',', unpack=True)
             self.y_test[i,:] = y
 
+    def pow10(self, x):
+        return np.power(10,x)
+
+    def scale_training_data(self):
+        self.scaler_x = StandardScaler()
+        self.scaler_x.fit(self.x_train)  
+        self.x_train_scaled = self.scaler_x.transform(self.x_train) 
+
+        #self.scaler_y = StandardScaler()
+        
+        self.scaler_y = FunctionTransformer(func=np.log10, inverse_func=self.pow10)
+        self.scaler_y.fit(self.y_train)  
+        self.y_train_scaled = self.scaler_y.transform(self.y_train) 
+
+    def scale_testing_data(self):
+        self.x_test_scaled = self.scaler_x.transform(self.x_test)  
+        self.y_test_scaled = self.scaler_y.transform(self.y_test)  
+
+    def save_scalers(self):
+        joblib.dump(self.scaler_x, self.scaler_x_fn)
+        joblib.dump(self.scaler_y, self.scaler_y_fn)
+
+    def load_scalers(self):
+        self.scaler_x = joblib.load(self.scaler_x_fn)
+        self.scaler_y = joblib.load(self.scaler_y_fn)
 
     def save_predictions(self, predictions_dir):
         os.makedirs(f'{predictions_dir}/results_{self.statistic}', exist_ok=True)
@@ -119,26 +143,31 @@ class Emulator(object):
     def train(self):
         pass
 
-
     def test(self):
+        pass
+
+    def save_model(self):
+        pass
+
+    def load_model(self):
         pass
 
 
 
 class EmulatorMLP(Emulator):
 
-    def __init__(self, statistic):
-        super().__init__(statistic)
+    # def __init__(self, statistic):
+    #     super().__init__(statistic)
 
     def train(self, max_iter=10000):
-        self.model = MLPRegressor(max_iter=max_iter).fit(self.x_train, self.y_train)
+        self.model = MLPRegressor(max_iter=max_iter).fit(self.x_train_scaled, self.y_train_scaled)
 
     def test(self):
-        self.y_predict = self.model.predict(self.x_test)
+        self.y_predict_scaled = self.model.predict(self.x_test_scaled)
+        self.y_predict = self.scaler_y.inverse_transform(self.y_predict_scaled)
  
-    def save_model(self, model_fn):
-        joblib.dump(self.model, model_fn)
+    def save_model(self):
+        joblib.dump(self.model, self.model_fn)
 
-    def load_model(self, model_fn):
-        self.model = joblib.load(model_fn)
-            
+    def load_model(self):
+        self.model = joblib.load(self.model_fn)
