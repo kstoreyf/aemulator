@@ -3,7 +3,7 @@ from emulator import EmulatorMLP
 statistic = 'xi'
 emu_name = 'MLP'
 train_tag = f'_{emu_name}'
-predictions_dir = f'../predictions_{statistic}{train_tag}'
+predictions_dir = f'../predictions/predictions_{statistic}{train_tag}'
 model_fn = f'../models/model_{statistic}{train_tag}.joblib'
 scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
 scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
