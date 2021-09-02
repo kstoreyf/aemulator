@@ -29,5 +29,19 @@ def generate_id_pairs_test():
             id_pairs_test.append((id_cosmo, id_hod))
     np.savetxt(fn_test, id_pairs_test, delimiter=',', fmt=['%d', '%d'])
 
+# nice recovery set with non-overlapping HODs
+def generate_id_pairs_recovery_test():
+    fn_recovery = '../tables/id_pairs_recovery_test.txt'
+    id_pairs_recovery = []
+    ids_cosmo = range(7)
+    n_hods_per_cosmo = 3
+    for id_cosmo in ids_cosmo:
+        id_hod_min = id_cosmo * 10
+        id_hod_max = id_hod_min + n_hods_per_cosmo
+        ids_hod = range(id_hod_min, id_hod_max)
+        for id_hod in ids_hod:
+            id_pairs_recovery.append((id_cosmo, id_hod))
+    np.savetxt(fn_recovery, id_pairs_recovery, delimiter=',', fmt=['%d', '%d'])
+
 if __name__=='__main__':
     main()
