@@ -2,6 +2,9 @@
 tables/
 predictions/
 models/
+logs/
+chains/
+.vscode/
 
 ## Byte-compiled / optimized / DLL files
 __pycache__/
