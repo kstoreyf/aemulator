@@ -5,20 +5,21 @@ import scipy
 import multiprocessing as mp
 
 import george
-import gpflow
 import joblib
-import tensorflow as tf
-from gpflow.utilities import print_summary
-from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import StandardScaler, FunctionTransformer  
 
-from gpflow.ci_utils import ci_niter
-from gpflow.optimizers import NaturalGradient
-from gpflow import set_trainable
+# from sklearn.neural_network import MLPRegressor
 
-import torch
-from torch import nn
-from torch.autograd import Variable
+# import gpflow
+# import tensorflow as tf
+# from gpflow.utilities import print_summary
+# from gpflow.ci_utils import ci_niter
+# from gpflow.optimizers import NaturalGradient
+# from gpflow import set_trainable
+
+# import torch
+# from torch import nn
+# from torch.autograd import Variable
 
 
 class Emulator(object):
@@ -83,6 +84,14 @@ class Emulator(object):
         # all r_vals are the same so just save the last one
         self.r_vals = r_vals
 
+        # FOR TESTING ONLY
+        print("TINY TRAINING SET")
+        print(self.x_train.shape)
+        self.n_train = 10
+        self.x_train = self.x_train[:self.n_train,:]
+        self.y_train = self.y_train[:self.n_train,:]
+        print(self.x_train.shape)
+
 
     def set_testing_data(self):
 
@@ -127,7 +136,10 @@ class Emulator(object):
         return np.power(10,x)
 
     def scale_training_data(self):
-        self.scaler_x = StandardScaler()
+
+        ## NO XSCALE FOR NOW
+        self.scaler_x = StandardScaler(with_mean=False, with_std=False)
+        #self.scaler_x = StandardScaler() # NORMAL SCALING
         self.scaler_x.fit(self.x_train)  
         self.x_train_scaled = self.scaler_x.transform(self.x_train) 
 
@@ -169,11 +181,11 @@ class Emulator(object):
         self.scaler_y = joblib.load(self.scaler_y_fn)
 
     def save_predictions(self, predictions_dir):
-        os.makedirs(f'{predictions_dir}/results_{self.statistic}', exist_ok=True)
+        os.makedirs(f'{predictions_dir}', exist_ok=True)
         
         for i in range(self.n_test):
             id_cosmo, id_hod = self.id_pairs_test[i]
-            y_pred_fn = f'{predictions_dir}/results_{self.statistic}/{self.statistic}_cosmo_{id_cosmo}_HOD_{id_hod}.dat'
+            y_pred_fn = f'{predictions_dir}/{self.statistic}_cosmo_{id_cosmo}_HOD_{id_hod}.dat'
             y_pred = self.y_predict[i]
             results = np.array([self.r_vals, y_pred])
             np.savetxt(y_pred_fn, results.T, delimiter=',', fmt=['%f', '%e'])
@@ -410,6 +422,8 @@ class EmulatorGPFlowBinned(Emulator):
 class EmulatorGeorge(Emulator):
 
     def train(self, max_iter=1000):
+
+        print("george version:", george.__version__)
         # don't need maxiter here, but want function handle to be consistent, just for ease of calling
 
         #FOR TESTING, CAREFUL
@@ -418,6 +432,7 @@ class EmulatorGeorge(Emulator):
         # self.y_train_scaled = self.y_train_scaled[:10,:]
         # self.n_train = 10
         # print(self.x_train_scaled.shape)
+        print(self.y_train)
 
         self.models = np.empty((self.n_bins), dtype=object)
         n_threads = self.n_bins
@@ -430,19 +445,23 @@ class EmulatorGeorge(Emulator):
 
     def train_bin(self, y_train_scaled_bin, y_error_scaled_bin):
         print(f"Training bin")
-        p0 = np.full(self.n_params, 0.1)
+        p0 = np.exp(np.full(self.n_params, 0.1))
         k_expsq = george.kernels.ExpSquaredKernel(p0, ndim=self.n_params)
         k_m32 = george.kernels.Matern32Kernel(p0, ndim=self.n_params)
         k_const = george.kernels.ConstantKernel(0.1, ndim=self.n_params)
         # this is "M32ExpConst"
         kernel = k_expsq*k_const + k_m32
 
-        model = george.GP(kernel, mean=np.mean(y_train_scaled_bin))
+        model = george.GP(kernel, mean=np.mean(y_train_scaled_bin), solver=george.BasicSolver)
         model.compute(self.x_train_scaled, y_error_scaled_bin)
+
+        print(y_train_scaled_bin)
 
         def neg_ln_like(p):
             model.set_parameter_vector(p)
-            return -model.log_likelihood(y_train_scaled_bin, quiet=True)
+            logl = model.log_likelihood(y_train_scaled_bin, quiet=True)
+            return -logl if np.isfinite(logl) else 1e25
+            #return -logl
 
         def grad_neg_ln_like(p):
             model.set_parameter_vector(p)
@@ -466,23 +485,45 @@ class EmulatorGeorge(Emulator):
                                     self.y_train_scaled[:,n], self.x_test_scaled, return_cov=False)
         self.y_predict = self.scaler_y.inverse_transform(self.y_predict_scaled)
 
+    def save_model_hyps(self):
+        os.makedirs(self.model_fn, exist_ok=True)
+        for n in range(self.n_bins):
+            hyperparameters = self.models[n].get_parameter_vector()
+            model_bin_fn = f'{self.model_fn}/model_bin{n}.txt'
+            np.savetxt(model_bin_fn, hyperparameters, fmt='%.7f')
+        
     def save_model(self):
-        # self.hyperparameters = model.get_parameter_vector()
-        # np.savetxt(f'{self.model_fn}.txt', self.hyperparameters)
+        ### pickle method
         os.makedirs(self.model_fn, exist_ok=True)
         for n in range(self.n_bins):
             model_bin_fn = f'{self.model_fn}/model_bin{n}.pkl'
             with open(model_bin_fn, "wb") as fp:
                 pickle.dump(self.models[n], fp)
 
+    def load_model_hyps(self):
+        #we still need the training data to condition on;
+        #load it back up even in test mode
+        self.set_training_data()
+        self.scale_training_data()
+        for n in range(self.n_bins):
+            model_bin_fn = f'{self.model_fn}/model_bin{n}.txt'
+            hyperparameters = np.loadtxt(model_bin_fn)
+
+            p0 = np.exp(np.full(self.n_params, 0.1))
+            k_expsq = george.kernels.ExpSquaredKernel(p0, ndim=self.n_params)
+            k_m32 = george.kernels.Matern32Kernel(p0, ndim=self.n_params)
+            k_const = george.kernels.ConstantKernel(0.1, ndim=self.n_params)
+            # this is "M32ExpConst"
+            kernel = k_expsq*k_const + k_m32
+
+            y_train_scaled_bin = self.y_train_scaled[:,n]
+            self.models[n] = george.GP(kernel, mean=np.mean(y_train_scaled_bin), solver=george.BasicSolver)
+            self.models[n].compute(self.x_train_scaled, self.y_error_scaled[n])
+            self.models[n].set_parameter_vector(hyperparameters)
+            self.models[n].compute(self.x_train_scaled, self.y_error_scaled[n])
+        
     def load_model(self):
-        #self.model = george.GP()
-        # we still need the training data to condition on;
-        # load it back up even in test mode
-        # self.set_training_data()
-        # self.scale_training_data()
-        # self.hyperparameters = np.loadtxt(f'{self.model_fn}.txt')
-        # self.model.set_parameter_vector(self.hyperparameters)
+        ### pickle method
         for n in range(self.n_bins):
             model_bin_fn = f'{self.model_fn}/model_bin{n}.pkl'
             with open(model_bin_fn, "rb") as fp:
@@ -520,42 +561,187 @@ class EmulatorGeorge(Emulator):
             self.models[n].set_parameter_vector(result.x)
 
 
+class EmulatorGeorgeOrig(Emulator):
+
+    def train(self, max_iter=1000):
+
+        print("george version:", george.__version__)
+        self.models = [None]*self.n_bins
+        print("Training commences!")
+        print("Constructing pool")
+        pool = mp.Pool(processes=self.n_bins)
+        print("Mapping bins")
+        res = pool.map(self.train_bin, range(self.n_bins))
+        print("Done training!")
+        print(np.array(res).shape)
+        # 37 is len kernel
+        self.hyperparams = np.empty((self.n_bins, 37))
+        for bb in range(self.n_bins):
+            #self.hyperparams[bb, :] = res[bb]
+            self.models[bb] = res[bb]
+
+
+    def train_bin(self, n):
+        print(f"Training bin {n}")
+
+        y_train_scaled_bin = self.y_train_scaled[:,n]    
+        y_error_scaled_bin = self.y_error_scaled[n]
+
+        if n==0:
+            print('xtrain:', self.x_train_scaled)
+            print('ytrain:', y_train_scaled_bin)
+            print('yerr:', y_error_scaled_bin)
+
+        p0 = np.full(self.n_params, 0.1)
+        p0 = np.exp(p0) 
+        k1 = george.kernels.ExpSquaredKernel(p0, ndim=len(p0))
+        k2 = george.kernels.Matern32Kernel(p0, ndim=len(p0))
+        k5 = george.kernels.ConstantKernel(0.1, ndim=len(p0))
+        kernel = k1*k5 + k2
+
+        mean = np.mean(y_train_scaled_bin)
+        if n==0:
+            print("mean:", mean)
+        self.models[n] = george.GP(kernel, mean=mean, solver=george.BasicSolver)
+        #gp.compute(self.training_params, self.gperr[bb])
+        self.models[n].compute(self.x_train_scaled, y_error_scaled_bin)
+
+        #p0 = gp.kernel.get_parameter_vector()
+        p0 = self.models[n].get_parameter_vector()
+        def nll(p):
+            self.models[n].set_parameter_vector(p)
+            ll = self.models[n].log_likelihood(y_train_scaled_bin, quiet=True)
+            return -ll if np.isfinite(ll) else 1e25
+
+        bnd = [np.log((1e-6, 1e+6)) for i in range(len(p0))]
+        results = scipy.optimize.minimize(nll, p0, method='L-BFGS-B', bounds=bnd)
+        self.models[n].set_parameter_vector(results.x)
+        hyps = self.models[n].kernel.get_parameter_vector()
+        if n==0:
+            print("hyps:", hyps)
+        #return hyps
+        return self.models[n]
+
+    def test(self):
+        self.y_predict = np.empty(self.y_test.shape)
+        self.y_predict_scaled = np.empty(self.y_test.shape)
+        for n in range(self.n_bins):
+            self.y_predict_scaled[:,n] = self.models[n].predict(
+                                    self.y_train_scaled[:,n], self.x_test_scaled, return_cov=False)
+        self.y_predict = self.scaler_y.inverse_transform(self.y_predict_scaled)
+        print("params (0,0):", self.x_test_scaled[0])
+        print("vals_pred (0,0):", self.y_predict[0])
+        print('hyps2:', self.models[0].get_parameter_vector())
+
+    def save_model(self):
+        os.makedirs(self.model_fn, exist_ok=True)
+        for n in range(self.n_bins):
+            model_bin_fn = f'{self.model_fn}/model_bin{n}.pkl'
+            with open(model_bin_fn, "wb") as fp:
+                pickle.dump(self.models[n], fp)
+
+    def load_model(self):
+        for n in range(self.n_bins):
+            model_bin_fn = f'{self.model_fn}/model_bin{n}.pkl'
+            with open(model_bin_fn, "rb") as fp:
+                self.models[n] = pickle.load(fp)
+
+    # def test(self):
+    #     self.y_predict = np.empty(self.y_test.shape)
+    #     self.y_predict_scaled = np.empty(self.y_test.shape)
+    #     count = 0
+    #     for pid, tparams in self.x_test_scaled.items():
+    #         vals_pred = self.predict(tparams)
+    #         self.y_predict[count,:] = vals_pred
+    #         count += 1
+
+    # def predict(self, params_pred):
+    #     #print(params_pred)
+    #     if type(params_pred)==dict:
+    #         params_arr = []
+    #         param_names_ordered = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w',
+    #                                 'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f',
+    #                                'f_env', 'delta_env', 'sigma_env']
+    #         for pn in param_names_ordered:
+    #             params_arr.append(params_pred[pn])
+    #     elif type(params_pred)==list or type(params_pred)==np.ndarray:
+    #         params_arr = params_pred
+    #     else:
+    #         raise ValueError("Params to predict at must be dict or array")
+
+    #     params_arr = np.atleast_2d(params_arr)
+    #     y_pred = np.zeros(self.n_bins)
+    #     for n in range(self.n_bins):
+    #         # predict on all the training data in the bin
+    #         val_pred, cov_pred = self.models[bb].predict(self.y_train_scaled[:,n], params_arr)
+    #         val_pred = self.scaler_y.inverse_transform(val_pred)
+    #         y_pred[bb] = val_pred
+
+    #     return y_pred
+
+ 
+    # def save_model(self):
+    #     np.savetxt(f'{self.model_fn}.txt', self.hyperparams, fmt='%.7f')
+    #     print(f"Saved hyperparameters to {self.model_fn}.txt")
+
+        
+    # def load_model(self):
+    #     #we still need the training data to condition on;
+    #     #load it back up even in test mode
+    #     self.set_training_data()
+    #     self.scale_training_data()
+    #     self.hyperparams = np.loadtxt(f'{self.model_fn}.txt')
+    #     for n in range(self.n_bins):
+    #         p0 = np.exp(np.full(self.n_params, 0.1))
+    #         k_expsq = george.kernels.ExpSquaredKernel(p0, ndim=self.n_params)
+    #         k_m32 = george.kernels.Matern32Kernel(p0, ndim=self.n_params)
+    #         k_const = george.kernels.ConstantKernel(0.1, ndim=self.n_params)
+    #         # this is "M32ExpConst"
+    #         kernel = k_expsq*k_const + k_m32
+
+    #         y_train_scaled_bin = self.y_train_scaled[:,n]
+    #         self.models[n] = george.GP(kernel, mean=np.mean(y_train_scaled_bin), solver=george.BasicSolver)
+    #         self.models[n].compute(self.x_train_scaled, self.y_error_scaled[n])
+    #         self.models[n].set_parameter_vector(self.hyperparams[n])
+    #         self.models[n].compute(self.x_train_scaled, self.y_error_scaled[n])
+
+
 class EmulatorPyTorch(Emulator):
 
-    class NeuralNetwork(nn.Module):
-        def __init__(self, n_input, n_output):
-            super().__init__()
-            self.flatten = nn.Flatten()
-            self.layer_1 = nn.Linear(n_input, 36)
-            self.layer_2 = nn.Linear(36, 18)
-            self.layer_3 = nn.Linear(18, 18)
-            self.layer_out = nn.Linear(18, n_output)
-            self.relu = nn.ReLU()
+    # class NeuralNetwork(nn.Module):
+    #     def __init__(self, n_input, n_output):
+    #         super().__init__()
+    #         self.flatten = nn.Flatten()
+    #         self.layer_1 = nn.Linear(n_input, 36)
+    #         self.layer_2 = nn.Linear(36, 18)
+    #         self.layer_3 = nn.Linear(18, 18)
+    #         self.layer_out = nn.Linear(18, n_output)
+    #         self.relu = nn.ReLU()
 
-        def forward(self, x):
-            x = self.relu(self.layer_1(x))
-            x = self.relu(self.layer_2(x))
-            x = self.relu(self.layer_3(x))
-            x = self.layer_out(x)
-            return x
+    #     def forward(self, x):
+    #         x = self.relu(self.layer_1(x))
+    #         x = self.relu(self.layer_2(x))
+    #         x = self.relu(self.layer_3(x))
+    #         x = self.layer_out(x)
+    #         return x
 
-    class Dataset(torch.utils.data.Dataset):
-        'Characterizes a dataset for PyTorch'
-        def __init__(self, xs, ys):
-            'Initialization'
-            self.xs = xs
-            self.ys = ys
+    # class Dataset(torch.utils.data.Dataset):
+    #     'Characterizes a dataset for PyTorch'
+    #     def __init__(self, xs, ys):
+    #         'Initialization'
+    #         self.xs = xs
+    #         self.ys = ys
 
-        def __len__(self):
-            'Denotes the total number of samples'
-            return len(self.xs)
+    #     def __len__(self):
+    #         'Denotes the total number of samples'
+    #         return len(self.xs)
 
-        def __getitem__(self, index):
-            'Generates one sample of data'
-            # Select sample
-            x = self.xs[index]
-            y = self.ys[index]
-            return x, y
+    #     def __getitem__(self, index):
+    #         'Generates one sample of data'
+    #         # Select sample
+    #         x = self.xs[index]
+    #         y = self.ys[index]
+    #         return x, y
 
     def train(self, max_iter=1000):
 
@@ -609,37 +795,37 @@ class EmulatorPyTorch(Emulator):
         self.model.load_state_dict(torch.load(f'{self.model_fn}.pt'))
         self.model.eval()
 
-class HeteroskedasticGaussian(gpflow.likelihoods.Likelihood):
-    def __init__(self, **kwargs):
-        # this likelihood expects a single latent function F, and two columns in the data matrix Y:
-        super().__init__(latent_dim=1, observation_dim=2, **kwargs)
+# class HeteroskedasticGaussian(gpflow.likelihoods.Likelihood):
+#     def __init__(self, **kwargs):
+#         # this likelihood expects a single latent function F, and two columns in the data matrix Y:
+#         super().__init__(latent_dim=1, observation_dim=2, **kwargs)
 
-    def _log_prob(self, F, Y):
-        # log_prob is used by the quadrature fallback of variational_expectations and predict_log_density.
-        # Because variational_expectations is implemented analytically below, this is not actually needed,
-        # but is included for pedagogical purposes.
-        # Note that currently relying on the quadrature would fail due to https://github.com/GPflow/GPflow/issues/966
-        print('log prob')
-        print(Y.shape)
-        print(Y[:, 0].shape, Y[:, 1].shape)
-        Y, NoiseVar = Y[:, 0], Y[:, 1]
-        #Y, NoiseVar = Y[0], Y[1]
-        return gpflow.logdensities.gaussian(Y, F, NoiseVar)
+#     def _log_prob(self, F, Y):
+#         # log_prob is used by the quadrature fallback of variational_expectations and predict_log_density.
+#         # Because variational_expectations is implemented analytically below, this is not actually needed,
+#         # but is included for pedagogical purposes.
+#         # Note that currently relying on the quadrature would fail due to https://github.com/GPflow/GPflow/issues/966
+#         print('log prob')
+#         print(Y.shape)
+#         print(Y[:, 0].shape, Y[:, 1].shape)
+#         Y, NoiseVar = Y[:, 0], Y[:, 1]
+#         #Y, NoiseVar = Y[0], Y[1]
+#         return gpflow.logdensities.gaussian(Y, F, NoiseVar)
 
-    def _variational_expectations(self, Fmu, Fvar, Y):
-        Y, NoiseVar = Y[:, 0], Y[:, 1]
-        Fmu, Fvar = Fmu[:, 0], Fvar[:, 0]
-        return (
-            -0.5 * np.log(2 * np.pi)
-            - 0.5 * tf.math.log(NoiseVar)
-            - 0.5 * (tf.math.square(Y - Fmu) + Fvar) / NoiseVar
-        )
+#     def _variational_expectations(self, Fmu, Fvar, Y):
+#         Y, NoiseVar = Y[:, 0], Y[:, 1]
+#         Fmu, Fvar = Fmu[:, 0], Fvar[:, 0]
+#         return (
+#             -0.5 * np.log(2 * np.pi)
+#             - 0.5 * tf.math.log(NoiseVar)
+#             - 0.5 * (tf.math.square(Y - Fmu) + Fvar) / NoiseVar
+#         )
 
-    # The following two methods are abstract in the base class.
-    # They need to be implemented even if not used.
+#     # The following two methods are abstract in the base class.
+#     # They need to be implemented even if not used.
 
-    def _predict_log_density(self, Fmu, Fvar, Y):
-        raise NotImplementedError
+#     def _predict_log_density(self, Fmu, Fvar, Y):
+#         raise NotImplementedError
 
-    def _predict_mean_and_var(self, Fmu, Fvar):
-        raise NotImplementedError
+#     def _predict_mean_and_var(self, Fmu, Fvar):
+#         raise NotImplementedError

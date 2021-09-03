@@ -3,13 +3,13 @@ import time
 import emulator
 
 
-statistic = 'xi'
-#emu_name = 'George'
+statistic = 'mcf'
+emu_name = 'George'
 #emu_name = 'GPFlowVGP'
-emu_name = 'PyTorch'
+#emu_name = 'PyTorch'
 max_iter = 1000
 # defaults for george: 'logscaler_gpmean_logabserr_matchorig_pool'
-train_tag = f'_{emu_name}'
+train_tag = f'_{emu_name}_george4_n10test'
 #train_tag = f'_{emu_name}_meanscaler_0gpmean'
 #train_tag = f'_{emu_name}_meanscaler_ndimkernel_maxiter10000'
 #train_tag = f'_{emu_name}_logscaler_ndimkernel_maxiter10000_bounds_noisevar_clean'
@@ -24,6 +24,7 @@ emu_dict = {'MLP': emulator.EmulatorMLP,
             'GPFlowVGP': emulator.EmulatorGPFlowVGP,
             'GPFlowBinned': emulator.EmulatorGPFlowBinned,
             'George': emulator.EmulatorGeorge,
+            'GeorgeOrig': emulator.EmulatorGeorgeOrig,
             'PyTorch': emulator.EmulatorPyTorch}
 Emu = emu_dict[emu_name]
 print("Model name:", model_fn)
