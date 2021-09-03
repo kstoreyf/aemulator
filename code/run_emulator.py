@@ -3,13 +3,14 @@ import time
 import emulator
 
 
-statistic = 'mcf'
+statistic = 'xi2'
 emu_name = 'George'
 #emu_name = 'GPFlowVGP'
 #emu_name = 'PyTorch'
 max_iter = 1000
 # defaults for george: 'logscaler_gpmean_logabserr_matchorig_pool'
-train_tag = f'_{emu_name}_george4_n10test'
+scaling = 'xrsq'
+train_tag = f'_{emu_name}_{scaling}_noxscale'
 #train_tag = f'_{emu_name}_meanscaler_0gpmean'
 #train_tag = f'_{emu_name}_meanscaler_ndimkernel_maxiter10000'
 #train_tag = f'_{emu_name}_logscaler_ndimkernel_maxiter10000_bounds_noisevar_clean'
@@ -29,7 +30,7 @@ emu_dict = {'MLP': emulator.EmulatorMLP,
 Emu = emu_dict[emu_name]
 print("Model name:", model_fn)
 print("Constructing emu")
-emu = Emu(statistic, model_fn, scaler_x_fn, scaler_y_fn, err_fn)
+emu = Emu(statistic, model_fn, scaler_x_fn, scaler_y_fn, err_fn, scaling=scaling)
 
 print("Training")
 s = time.time()

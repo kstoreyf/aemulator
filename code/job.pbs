@@ -2,7 +2,7 @@
 ##PBS -N train_emu_wp_George_logscaler_gpmean_logabserr_matchorig_pool
 ##PBS -N train_emu_xi_George_meanscaler_0gpmean
 ##PBS -N train_emu_GPFlowBinned_logscaler_ndimkernel_maxiter10000_bounds_noisevar_clean
-#PBS -N train_emu_mcf_George
+#PBS -N train_emu_xi2_George_xrsq_noxscale
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=9
 #PBS -m ae
@@ -16,6 +16,7 @@ echo 'starting'
 echo -n 'Job is running on node '; cat $PBS_NODEFILE
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate aem
+#conda activate george3env
 python run_emulator.py
 echo 'done'
 

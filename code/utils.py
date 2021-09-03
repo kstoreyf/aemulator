@@ -6,18 +6,18 @@ nbins = 9
 rbins = np.logspace(np.log10(0.1), np.log10(50), nbins + 1) # Note the + 1 to nbins
 rlog = 10 ** (0.5 * (np.log10(rbins)[1:] + np.log10(rbins)[:-1]))
 rlin = np.linspace(5, 45, 9)
-r_dict = {'wp': rlog, 'xi': rlog, 'upf': rlin, 'mcf': rlog}
-scale_dict = {'wp': ('log', 'log'), 'xi': ('log', 'log'), 'upf': ('linear', 'log'), 'mcf': ('log', 'linear')} #x, y
-stat_labels = {'upf':r"P$_U$(r)", 'wp':r'$w_p$($r_p$)', 'mcf':"M($r$)", 'xi':r"$\xi_0$($r$)", 'xi2':r"$\xi_2$($r$)"}
+r_dict = {'wp': rlog, 'xi': rlog, 'upf': rlin, 'mcf': rlog, 'xi2': rlog}
+scale_dict = {'wp': ('log', 'log'), 'xi': ('log', 'log'), 'upf': ('linear', 'log'), 'mcf': ('log', 'linear'), 'xi2': ('log', 'linear')} #x, y
+stat_labels = {'upf':r"P$_U$(r)", 'wp':r'$w_p$($r_p$)', 'mcf':"M($r$)", 'xi':r"$\xi_0$($r$)", 'xi2':r"$r^2 \xi_2$($r$)"}
 r_labels = {'upf':r"$r (h^{-1}$Mpc)", 'wp':r'$r_p (h^{-1}$Mpc)', 'mcf':r"$r (h^{-1}$Mpc)", 'xi':r"$r (h^{-1}$Mpc)", 'xi2':r"$r (h^{-1}$Mpc)$"}
 
 def get_emu(traintag):
-    from emulator import EmulatorMLP, EmulatorGPFlow, EmulatorGPFlowBinned, EmulatorGeorge
+    import emulator
     emu_name = traintag.split('_')[0]
-    emu_dict = {'MLP': EmulatorMLP,
-                'GPFlow': EmulatorGPFlow, 
-                'GPFlowBinned': EmulatorGPFlowBinned,
-                'George': EmulatorGeorge}
+    emu_dict = {'MLP': emulator.EmulatorMLP,
+                'GPFlow': emulator.EmulatorGPFlow, 
+                'GPFlowBinned': emulator.EmulatorGPFlowBinned,
+                'George': emulator.EmulatorGeorge}
     return emu_dict[emu_name]
 
 def load_cosmo_params():

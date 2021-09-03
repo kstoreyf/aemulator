@@ -25,7 +25,7 @@ from sklearn.preprocessing import StandardScaler, FunctionTransformer
 class Emulator(object):
 
     def __init__(self, statistic, model_fn, scaler_x_fn, scaler_y_fn,
-                 err_fn, train_mode=True, test_mode=True):
+                 err_fn, train_mode=True, test_mode=True, scaling='log'):
         self.statistic = statistic
         self.model_fn = model_fn
         self.scaler_x_fn = scaler_x_fn
@@ -34,7 +34,7 @@ class Emulator(object):
         self.load_error()
         if train_mode:
             self.set_training_data()
-            self.scale_training_data()
+            self.scale_training_data(scaling)
             self.save_scalers()
         if test_mode:
             self.set_testing_data()
@@ -84,13 +84,13 @@ class Emulator(object):
         # all r_vals are the same so just save the last one
         self.r_vals = r_vals
 
-        # FOR TESTING ONLY
-        print("TINY TRAINING SET")
-        print(self.x_train.shape)
-        self.n_train = 10
-        self.x_train = self.x_train[:self.n_train,:]
-        self.y_train = self.y_train[:self.n_train,:]
-        print(self.x_train.shape)
+        #FOR TESTING PURPOSES ONLY
+        # print("TINY TRAINING SET")
+        # print(self.x_train.shape)
+        # self.n_train = 10
+        # self.x_train = self.x_train[:self.n_train,:]
+        # self.y_train = self.y_train[:self.n_train,:]
+        # print(self.x_train.shape)
 
 
     def set_testing_data(self):
@@ -134,39 +134,62 @@ class Emulator(object):
 
     def pow10(self, x):
         return np.power(10,x)
+    
+    def times_rsq(self, x):
+        return x * self.r_vals**2
 
-    def scale_training_data(self):
+    def div_rsq(self, x):
+        return x / self.r_vals**2
 
-        ## NO XSCALE FOR NOW
-        self.scaler_x = StandardScaler(with_mean=False, with_std=False)
-        #self.scaler_x = StandardScaler() # NORMAL SCALING
+    def scale_training_data(self, scaling):
+        
+        print("NO XSCALE")
+        self.scaler_x = StandardScaler(with_mean=False, with_std=False) # NO XSCALE 
+        #self.scaler_x = StandardScaler() # XSCALE
         self.scaler_x.fit(self.x_train)  
         self.x_train_scaled = self.scaler_x.transform(self.x_train) 
 
-        # # logscaler
-        self.scaler_y = FunctionTransformer(func=np.log10, inverse_func=self.pow10) #logscaler
-        self.scaler_y.fit(self.y_train)  
-        self.y_train_scaled = self.scaler_y.transform(self.y_train) 
+        if scaling=='log':
+            # # logscaler
+            self.scaler_y = FunctionTransformer(func=np.log10, inverse_func=self.pow10) #logscaler
+            self.scaler_y.fit(self.y_train)  
+            self.y_train_scaled = self.scaler_y.transform(self.y_train) 
 
-        #for log of y, errors are 1/ln(10) * dy/y. dy is error, for y we use the mean.
-        #source: https://faculty.washington.edu/stuve/log_error.pdf, https://web.ma.utexas.edu/users/m408n/m408c/CurrentWeb/LM3-6-2.php
-        # our y error is fractional, so we first multiply by the mean to make it absolute:
-        self.y_error *= np.mean(self.y_train, axis=0)
-        self.y_error_scaled = 1/np.log(10) * self.y_error / np.mean(self.y_train, axis=0) #logscaler
+            #for log of y, errors are 1/ln(10) * dy/y. dy is error, for y we use the mean.
+            #source: https://faculty.washington.edu/stuve/log_error.pdf, https://web.ma.utexas.edu/users/m408n/m408c/CurrentWeb/LM3-6-2.php
+            # our y error is fractional, so we first multiply by the mean to make it absolute:
+            self.y_error *= np.mean(self.y_train, axis=0)
+            self.y_error_scaled = 1/np.log(10) * self.y_error / np.mean(self.y_train, axis=0) #logscaler
 
-        # #meanscaler
-        # self.scaler_y = StandardScaler() #meanscaler
-        # self.scaler_y.fit(self.y_train)  
-        # self.y_train_scaled = self.scaler_y.transform(self.y_train) 
+        elif scaling=='mean':
+            #meanscaler
+            self.scaler_y = StandardScaler() #meanscaler
+            self.scaler_y.fit(self.y_train)  
+            self.y_train_scaled = self.scaler_y.transform(self.y_train) 
 
-        # # our y error is fractional, so we first multiply by the mean to make it absolute:
-        # self.y_error *= np.mean(self.y_train, axis=0)
-        # self.scaler_y_err = StandardScaler(with_mean=False) #mean false bc don't want to shift it, just rescale by std of training
-        # #the args to fit are the mean and std used; we want to scale by the same std as we scaled the y_train data by
-        # self.scaler_y_err.fit(self.y_train) 
-        # self.y_error_scaled = self.scaler_y_err.transform(self.y_error.reshape(1, -1))
-        # self.y_error_scaled = self.y_error_scaled.flatten()     
-        # # ends up same as: self.y_error/np.std(self.y_train, axis=0)
+            # our y error is fractional, so we first multiply by the mean to make it absolute:
+            self.y_error *= np.mean(self.y_train, axis=0)
+            self.scaler_y_err = StandardScaler(with_mean=False) #mean false bc don't want to shift it, just rescale by std of training
+            #the args to fit are the mean and std used; we want to scale by the same std as we scaled the y_train data by
+            self.scaler_y_err.fit(self.y_train) 
+            self.y_error_scaled = self.scaler_y_err.transform(self.y_error.reshape(1, -1))
+            self.y_error_scaled = self.y_error_scaled.flatten()     
+            # ends up same as: self.y_error/np.std(self.y_train, axis=0)
+
+        elif scaling=='xrsq':
+
+            self.scaler_y = FunctionTransformer(func=self.times_rsq, inverse_func=self.div_rsq) #logscaler
+            self.scaler_y.fit(self.y_train)  
+            self.y_train_scaled = self.scaler_y.transform(self.y_train) 
+
+            #for log of y, errors are 1/ln(10) * dy/y. dy is error, for y we use the mean.
+            #source: https://faculty.washington.edu/stuve/log_error.pdf, https://web.ma.utexas.edu/users/m408n/m408c/CurrentWeb/LM3-6-2.php
+            # our y error is fractional, so we first multiply by the mean to make it absolute:
+            self.y_error *= np.mean(self.y_train, axis=0)
+            self.y_error_scaled = self.y_error * self.r_vals**2
+
+        else:
+            raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean']")
 
     def scale_testing_data(self):
         self.x_test_scaled = self.scaler_x.transform(self.x_test)  
@@ -426,14 +449,6 @@ class EmulatorGeorge(Emulator):
         print("george version:", george.__version__)
         # don't need maxiter here, but want function handle to be consistent, just for ease of calling
 
-        #FOR TESTING, CAREFUL
-        # print(self.x_train_scaled.shape)
-        # self.x_train_scaled = self.x_train_scaled[:10,:]
-        # self.y_train_scaled = self.y_train_scaled[:10,:]
-        # self.n_train = 10
-        # print(self.x_train_scaled.shape)
-        print(self.y_train)
-
         self.models = np.empty((self.n_bins), dtype=object)
         n_threads = self.n_bins
         pool = mp.Pool(processes=n_threads)
@@ -454,25 +469,17 @@ class EmulatorGeorge(Emulator):
 
         model = george.GP(kernel, mean=np.mean(y_train_scaled_bin), solver=george.BasicSolver)
         model.compute(self.x_train_scaled, y_error_scaled_bin)
-
         print(y_train_scaled_bin)
 
         def neg_ln_like(p):
             model.set_parameter_vector(p)
             logl = model.log_likelihood(y_train_scaled_bin, quiet=True)
             return -logl if np.isfinite(logl) else 1e25
-            #return -logl
-
-        def grad_neg_ln_like(p):
-            model.set_parameter_vector(p)
-            return -model.grad_log_likelihood(y_train_scaled_bin, quiet=True)
 
         print("Optimizing")
-        # note: the parameter vector is one value for each kernel in the combined kernel!
+        # note: the parameter vector is one value for each kernel parameter in the combined kernel! 37d for us
         bounds = [np.log((1e-6, 1e+6)) for i in range(len(model.get_parameter_vector()))]
-        # jac makes it faster and doesn't affect result
         result = scipy.optimize.minimize(neg_ln_like, model.get_parameter_vector(), method='L-BFGS-B', bounds=bounds)
-        #result = scipy.optimize.minimize(neg_ln_like, model.get_parameter_vector(), jac=grad_neg_ln_like, method='L-BFGS-B', bounds=bounds)
         model.set_parameter_vector(result.x)
 
         return model
@@ -485,13 +492,6 @@ class EmulatorGeorge(Emulator):
                                     self.y_train_scaled[:,n], self.x_test_scaled, return_cov=False)
         self.y_predict = self.scaler_y.inverse_transform(self.y_predict_scaled)
 
-    def save_model_hyps(self):
-        os.makedirs(self.model_fn, exist_ok=True)
-        for n in range(self.n_bins):
-            hyperparameters = self.models[n].get_parameter_vector()
-            model_bin_fn = f'{self.model_fn}/model_bin{n}.txt'
-            np.savetxt(model_bin_fn, hyperparameters, fmt='%.7f')
-        
     def save_model(self):
         ### pickle method
         os.makedirs(self.model_fn, exist_ok=True)
@@ -500,65 +500,12 @@ class EmulatorGeorge(Emulator):
             with open(model_bin_fn, "wb") as fp:
                 pickle.dump(self.models[n], fp)
 
-    def load_model_hyps(self):
-        #we still need the training data to condition on;
-        #load it back up even in test mode
-        self.set_training_data()
-        self.scale_training_data()
-        for n in range(self.n_bins):
-            model_bin_fn = f'{self.model_fn}/model_bin{n}.txt'
-            hyperparameters = np.loadtxt(model_bin_fn)
-
-            p0 = np.exp(np.full(self.n_params, 0.1))
-            k_expsq = george.kernels.ExpSquaredKernel(p0, ndim=self.n_params)
-            k_m32 = george.kernels.Matern32Kernel(p0, ndim=self.n_params)
-            k_const = george.kernels.ConstantKernel(0.1, ndim=self.n_params)
-            # this is "M32ExpConst"
-            kernel = k_expsq*k_const + k_m32
-
-            y_train_scaled_bin = self.y_train_scaled[:,n]
-            self.models[n] = george.GP(kernel, mean=np.mean(y_train_scaled_bin), solver=george.BasicSolver)
-            self.models[n].compute(self.x_train_scaled, self.y_error_scaled[n])
-            self.models[n].set_parameter_vector(hyperparameters)
-            self.models[n].compute(self.x_train_scaled, self.y_error_scaled[n])
-        
     def load_model(self):
         ### pickle method
         for n in range(self.n_bins):
             model_bin_fn = f'{self.model_fn}/model_bin{n}.pkl'
             with open(model_bin_fn, "rb") as fp:
                 self.models[n] = pickle.load(fp)
-
-    def train_binloop(self):
-
-        for n in range(self.n_bins):
-            print(f"Training bin {n}")
-            p0 = np.full(self.n_params, 0.1)
-            k_expsq = george.kernels.ExpSquaredKernel(p0, ndim=self.n_params)
-            k_m32 = george.kernels.Matern32Kernel(p0, ndim=self.n_params)
-            k_const = george.kernels.ConstantKernel(0.1, ndim=self.n_params)
-            # this is "M32ExpConst"
-            kernel = k_expsq*k_const + k_m32
-
-            model = george.GP(kernel, mean=np.mean(self.y_train_scaled[:,n]))
-            self.models[n].compute(self.x_train_scaled, self.y_error_scaled[n])
-
-            def neg_ln_like(p):
-                self.models[n].set_parameter_vector(p)
-                return -self.models[n].log_likelihood(self.y_train_scaled[:,n], quiet=True)
-
-            def grad_neg_ln_like(p):
-                self.models[n].set_parameter_vector(p)
-                return -self.models[n].grad_log_likelihood(self.y_train_scaled[:,n], quiet=True)
-
-            print("Optimizing")
-            # note: the parameter vector is one value for each kernel in the combined kernel!
-            bounds = [np.log((1e-6, 1e+6)) for i in range(len(self.models[n].get_parameter_vector()))]
-            #result = scipy.optimize.minimize(neg_ln_like, self.models[n].get_parameter_vector(), jac=grad_neg_ln_like, bounds=bounds)
-            # match orig:
-            result = scipy.optimize.minimize(neg_ln_like, self.models[n].get_parameter_vector(), method='L-BFGS-B', bounds=bounds)
-
-            self.models[n].set_parameter_vector(result.x)
 
 
 class EmulatorGeorgeOrig(Emulator):
