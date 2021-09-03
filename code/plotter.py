@@ -31,7 +31,7 @@ def compare_accuracy(statistic, train_tags, labels, colors):
 
         for i in range(n_test):
             id_cosmo, id_hod = id_pairs_test[i]
-            y_pred_fn = f'{predictions_dir}/results_{statistic}/{statistic}_cosmo_{id_cosmo}_HOD_{id_hod}.dat'
+            y_pred_fn = f'{predictions_dir}/{statistic}_cosmo_{id_cosmo}_HOD_{id_hod}.dat'
             _, y_pred = np.loadtxt(y_pred_fn, delimiter=',', unpack=True)
             ys_pred[i,:] = y_pred
 
@@ -75,14 +75,17 @@ def plot_accuracy(statistic, train_tag):
         r_vals, y_test = np.loadtxt(y_test_fn, delimiter=',', unpack=True)
         ys_test[i,:] = y_test
 
-        y_pred_fn = f'{predictions_dir}/results_{statistic}/{statistic}_cosmo_{id_cosmo}_HOD_{id_hod}.dat'
+        y_pred_fn = f'{predictions_dir}/{statistic}_cosmo_{id_cosmo}_HOD_{id_hod}.dat'
         _, y_pred = np.loadtxt(y_pred_fn, delimiter=',', unpack=True)
         ys_pred[i,:] = y_pred
 
         colors[i] = plt.cm.rainbow(color_idx[id_cosmo])
 
         err_frac = (y_pred - y_test)/y_test
-
+        
+        if statistic=='xi2':
+            y_test *= r_vals**2
+            y_pred *= r_vals**2
         axarr[0].plot(r_vals, y_test, color=colors[i], alpha=alpha, label='Observed', 
                       ls='None', marker='o', markerfacecolor=None, zorder=zorders[i])
         axarr[0].plot(r_vals, y_pred, color=colors[i], alpha=alpha, label='Emu Predicted', 
@@ -162,7 +165,7 @@ def compare_emulators(statistic, testtags, acctags, errtag, savetags, labels=Non
                 fnp = '../testing_results/predictions_{}{}/{}.dat'.format(statistic, acctag, idtag)
                 rpredic, ppredic = np.loadtxt(fnp, delimiter=',', unpack=True)
 
-                y_pred_fn = f'{predictions_dir}/results_{statistic}/{statistic}_cosmo_{id_cosmo}_HOD_{id_hod}.dat'
+                y_pred_fn = f'{predictions_dir}/{statistic}_cosmo_{id_cosmo}_HOD_{id_hod}.dat'
                 _, y_pred = np.loadtxt(y_pred_fn, delimiter=',', unpack=True)
 
                 fracerr = (ppredic-ptest)/ptest
