@@ -13,7 +13,8 @@ r_labels = {'upf':r"$r (h^{-1}$Mpc)", 'wp':r'$r_p (h^{-1}$Mpc)', 'mcf':r"$r (h^{
 
 def get_emu(traintag):
     import emulator
-    emu_name = traintag.split('_')[0]
+    emu_name = traintag.split('_')[1]
+    print("name:", emu_name)
     emu_dict = {'MLP': emulator.EmulatorMLP,
                 'GPFlow': emulator.EmulatorGPFlow, 
                 'GPFlowBinned': emulator.EmulatorGPFlowBinned,
@@ -22,13 +23,13 @@ def get_emu(traintag):
 
 def load_cosmo_params():
     # 7 cosmo params
-    cosmo_param_names = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w']
+    cosmo_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w"]
     cosmo_params = np.loadtxt('../tables/cosmology_camb_test_box_full.dat')
     return cosmo_param_names, cosmo_params
 
 def load_hod_params():
     # 11 cosmo params
-    hod_param_names = ['M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
+    hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
     hod_params = np.loadtxt('../tables/HOD_test_np11_n1000_new_f_env.dat')
     hod_params[:, 0] = np.log10(hod_params[:, 0])
     hod_params[:, 2] = np.log10(hod_params[:, 2])

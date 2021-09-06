@@ -105,7 +105,7 @@ def chain_config(f, cfg):
         Cfg with MCMC data
     """
 
-    required_mcmc_keys = ['param_names_vary']
+    required_mcmc_keys = ['chain_results_fn','param_names_vary']
 
     for key in required_mcmc_keys:
         assert key in cfg, "%s not in config but is required."%key

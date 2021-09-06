@@ -141,6 +141,18 @@ class Emulator(object):
     def div_rsq(self, x):
         return x / self.r_vals**2
 
+    def times_rsq_mean(self, x):
+        x_xrsq = x * self.r_vals**2
+        self.y_train_xrsq_mean = np.mean(x_xrsq, axis=0)
+        self.y_train_xrsq_std = np.std(x_xrsq, axis=0)
+        x_xrsq_mean = (x_xrsq - self.y_train_xrsq_mean)/self.y_train_xrsq_std
+        return x_xrsq_mean
+
+    def div_rsq_mean(self, x_xrsq_mean):
+        x_xrsq = x_xrsq_mean * self.y_train_xrsq_std + self.y_train_xrsq_mean
+        x = x_xrsq / self.r_vals**2
+        return x
+
     def scale_training_data(self, scaling):
         
         print("NO XSCALE")
@@ -187,6 +199,19 @@ class Emulator(object):
             # our y error is fractional, so we first multiply by the mean to make it absolute:
             self.y_error *= np.mean(self.y_train, axis=0)
             self.y_error_scaled = self.y_error * self.r_vals**2
+
+        elif scaling=='xrsqmean':
+
+            self.scaler_y = FunctionTransformer(func=self.times_rsq_mean, inverse_func=self.div_rsq_mean) #logscaler
+            self.scaler_y.fit(self.y_train)  
+            self.y_train_scaled = self.scaler_y.transform(self.y_train) 
+
+            #for log of y, errors are 1/ln(10) * dy/y. dy is error, for y we use the mean.
+            #source: https://faculty.washington.edu/stuve/log_error.pdf, https://web.ma.utexas.edu/users/m408n/m408c/CurrentWeb/LM3-6-2.php
+            # our y error is fractional, so we first multiply by the mean to make it absolute:
+            self.y_error *= np.mean(self.y_train, axis=0)
+            self.y_error_scaled = self.y_error * self.r_vals**2 # xsqr part
+            self.y_error_scaled /= self.y_train_xrsq_std # mean part; only std bc don't want to shift it, just rescale by std of training
 
         else:
             raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean']")
@@ -484,6 +509,34 @@ class EmulatorGeorge(Emulator):
 
         return model
 
+    def predict(self, x_to_predict):
+
+        # make sure parameters in correct order
+        if type(x_to_predict)==dict:
+            x_to_predict_arr = []
+            param_names_ordered = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w',
+                                    'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f',
+                                   'f_env', 'delta_env', 'sigma_env']
+            for pn in param_names_ordered:
+                x_to_predict_arr.append(x_to_predict[pn])
+        elif type(x_to_predict)==list or type(x_to_predict)==np.ndarray:
+            x_to_predict_arr = x_to_predict
+        else:
+            raise ValueError("Params to predict at must be dict or array")
+
+        # scale and predict
+        x_to_predict_arr = np.atleast_2d(x_to_predict_arr)
+        x_to_predict_scaled = self.scaler_x.transform(x_to_predict_arr)
+        print("xpredscale:", x_to_predict_scaled)
+        print("ytrainscale:", self.y_train_scaled)
+        y_predict_scaled = np.empty(self.n_bins)
+        for n in range(self.n_bins):
+            y_predict_scaled[n] = self.models[n].predict(self.y_train_scaled[:,n], x_to_predict_scaled, return_cov=False)
+        print("ypredscale:", y_predict_scaled)
+        y_predict = self.scaler_y.inverse_transform(y_predict_scaled)
+        print("ypred:", y_predict)
+        return y_predict
+
     def test(self):
         self.y_predict = np.empty(self.y_test.shape)
         self.y_predict_scaled = np.empty(self.y_test.shape)
@@ -502,6 +555,7 @@ class EmulatorGeorge(Emulator):
 
     def load_model(self):
         ### pickle method
+        self.models = [None]*self.n_bins
         for n in range(self.n_bins):
             model_bin_fn = f'{self.model_fn}/model_bin{n}.pkl'
             with open(model_bin_fn, "rb") as fp:

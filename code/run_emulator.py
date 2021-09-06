@@ -9,7 +9,7 @@ emu_name = 'George'
 #emu_name = 'PyTorch'
 max_iter = 1000
 # defaults for george: 'logscaler_gpmean_logabserr_matchorig_pool'
-scaling = 'xrsq'
+scaling = 'xrsqmean'
 train_tag = f'_{emu_name}_{scaling}_noxscale'
 #train_tag = f'_{emu_name}_meanscaler_0gpmean'
 #train_tag = f'_{emu_name}_meanscaler_ndimkernel_maxiter10000'

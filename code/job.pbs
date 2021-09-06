@@ -2,7 +2,7 @@
 ##PBS -N train_emu_wp_George_logscaler_gpmean_logabserr_matchorig_pool
 ##PBS -N train_emu_xi_George_meanscaler_0gpmean
 ##PBS -N train_emu_GPFlowBinned_logscaler_ndimkernel_maxiter10000_bounds_noisevar_clean
-#PBS -N train_emu_xi2_George_xrsq_noxscale
+#PBS -N train_emu_xi2_George_xrsqmean_noxscale
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=9
 #PBS -m ae

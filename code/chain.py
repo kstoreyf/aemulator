@@ -1,4 +1,9 @@
+import h5py
+import multiprocessing as mp
 import numpy as np
+import pickle
+import scipy
+import time
 
 import dynesty
 from scipy.linalg import sqrtm
@@ -7,7 +12,7 @@ from scipy.linalg import sqrtm
 _param_names_cosmo = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w']
 _param_names_hod = ['M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
 
-def lnlike(theta, param_names, fixed_params, ys, cov):
+def log_likelihood(theta, param_names, fixed_params, ys_observed, cov):
     s = time.time()
     theta = np.array(theta).flatten() #theta looks like [[[p]]] for some reason
     param_dict = dict(zip(param_names, theta)) #weirdly necessary for Powell minimization
@@ -17,8 +22,11 @@ def lnlike(theta, param_names, fixed_params, ys, cov):
         pred = emu.predict(param_dict)
         emu_preds.append(pred)
     emu_pred = np.hstack(emu_preds)
-    diff = (np.array(emu_pred) - np.array(ys))/np.array(ys) #fractional error
+    diff = (np.array(emu_pred) - np.array(ys_observed))/np.array(ys_observed) #fractional error
     diff = diff.flatten()
+    print(ys_observed)
+    print(emu_pred)
+    print(diff)
     # the solve is a better way to get the inverse
     like = -0.5 * np.dot(diff, np.linalg.solve(cov, diff))
     e = time.time()
@@ -31,7 +39,7 @@ def prior_transform_hypercube(u, param_names):
     idxs_cosmo = [i for i in range(len(param_names)) if param_names[i] in _param_names_cosmo]
     if len(idxs_cosmo)>0:
         dist = scipy.stats.norm.ppf(u[idxs_cosmo])  # convert to standard normal
-        v[idxs_cosmo] = np.dot(_hprior_cov_sqrt, dist) + _hprior_means
+        v[idxs_cosmo] = np.dot(_hypercube_prior_cov_sqrt, dist) + _hypercube_prior_means
 
     idxs_hod = [i for i in range(len(param_names)) if param_names[i] in _param_names_hod]
     params_hod = param_names[idxs_hod]
@@ -57,7 +65,7 @@ def get_cov_means_for_hypercube_prior(idxs_cosmo_vary):
     return hypercube_prior_cov_sqrt, hypercube_prior_means
 
 
-def run_mcmc(emus, param_names, ys, cov, chain_fn, fixed_params={},
+def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results_fn, fixed_params={},
              n_threads=1, dlogz=0.01, seed=None):
 
     print("Dynesty sampling (static) - nongen")
@@ -70,7 +78,7 @@ def run_mcmc(emus, param_names, ys, cov, chain_fn, fixed_params={},
     _hypercube_prior_cov_sqrt, _hypercube_prior_means = get_cov_means_for_hypercube_prior(idxs_cosmo_vary)
 
     prior_args = [param_names]
-    logl_args = [param_names, fixed_params, ys, cov]
+    logl_args = [param_names, fixed_params, ys_observed, cov]
 
     # Set chain hyperparameters
     # "The rule of thumb I use is N^2 * a few" (https://github.com/joshspeagle/dynesty/issues/208)
@@ -83,10 +91,10 @@ def run_mcmc(emus, param_names, ys, cov, chain_fn, fixed_params={},
     vol_check = 2.0 #for multi; default = 2.0, larger more conservative
     if np.isnan(seed):
         seed = np.random.randint(low=0, high=1000)
-    rstate = RandomState(seed)
+    rstate = np.random.RandomState(seed)
     
     # Add info to chain file
-    f = h5py.File(chain_fn, 'r+')
+    f = h5py.File(chain_params_fn, 'r+')
     f.attrs['nlive'] = nlive
     f.attrs['sample_method'] = sample_method
     f.attrs['slices'] = slices
@@ -106,11 +114,11 @@ def run_mcmc(emus, param_names, ys, cov, chain_fn, fixed_params={},
     print("seed:", seed)
     print("vol_dec:", vol_dec, "vol_check:", vol_check)
     print("slices:", slices)
-    print("dlogz: ", f.attrs['dlogz'])
+    print("dlogz: ", dlogz)
 
     with mp.Pool() as pool:
-        queue_size = n_threads # was taking up >100% of cpu
-        if not multi:
+        queue_size = n_threads
+        if n_threads<=1:
             print("running in serial")
             pool, queue_size = None, None
 
@@ -132,10 +140,5 @@ def run_mcmc(emus, param_names, ys, cov, chain_fn, fixed_params={},
 
         # save with pickle
         print("Saving results obejct with pickle")
-        chain_main = chain_fn.split('/')[-1]
-        chaintag = chain_main.split('chains_')[-1].split('.h5')[0]
-        pickle_dir = f'../results_chains'
-        os.makedirs(pickle_dir, exist_ok=True)
-        pickle_fn = f'{pickle_dir}/results_{chaintag}.pkl'
         with open(chain_results_fn, 'wb') as pickle_file:
             pickle.dump(res, pickle_file)
