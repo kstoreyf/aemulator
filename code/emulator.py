@@ -1,3 +1,4 @@
+import gc
 import numpy as np
 import os
 import pickle
@@ -24,25 +25,38 @@ from sklearn.preprocessing import StandardScaler, FunctionTransformer
 
 class Emulator(object):
 
-    def __init__(self, statistic, model_fn, scaler_x_fn, scaler_y_fn,
-                 err_fn, train_mode=True, test_mode=True, scaling='log'):
+    def __init__(self, statistic, scaling, model_fn, scaler_x_fn, scaler_y_fn,
+                 err_fn, train_mode=False, test_mode=False, predict_mode=False):
+        assert np.any(np.array([train_mode, test_mode, predict_mode])), "At least one mode must be True!"
         self.statistic = statistic
         self.model_fn = model_fn
         self.scaler_x_fn = scaler_x_fn
         self.scaler_y_fn = scaler_y_fn
         self.err_fn = err_fn
-        self.load_error()
+        self.set_training_data() # always need training data, for error (and GP conditioning)
+        self.load_y_error()
+        self.scale_y_error(scaling)
+        # for training emulator initially
         if train_mode:
-            self.set_training_data()
-            self.scale_training_data(scaling)
+            self.construct_scalers(scaling)
             self.save_scalers()
+        # for running accuracy test on full test suite
         if test_mode:
-            self.set_testing_data()
             self.load_scalers()
+            self.set_testing_data()
             self.scale_testing_data()
+        # for making one-off predictions (i.e. when running MCMC chains)
+        if predict_mode: 
+            self.load_scalers()
+        self.scale_training_data() # need to scale training data for George emu, so might as well always
+        self.param_names_ordered = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w',
+                                    'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f',
+                                   'f_env', 'delta_env', 'sigma_env']
 
-    def load_error(self):
+    def load_y_error(self):
         self.y_error = np.loadtxt(self.err_fn)
+        # our y error is fractional, so we first multiply by the mean to make it absolute:
+        self.y_error *= np.mean(self.y_train, axis=0)
 
     def set_training_data(self):
         
@@ -143,8 +157,6 @@ class Emulator(object):
 
     def times_rsq_mean(self, x):
         x_xrsq = x * self.r_vals**2
-        self.y_train_xrsq_mean = np.mean(x_xrsq, axis=0)
-        self.y_train_xrsq_std = np.std(x_xrsq, axis=0)
         x_xrsq_mean = (x_xrsq - self.y_train_xrsq_mean)/self.y_train_xrsq_std
         return x_xrsq_mean
 
@@ -153,68 +165,63 @@ class Emulator(object):
         x = x_xrsq / self.r_vals**2
         return x
 
-    def scale_training_data(self, scaling):
+    def construct_scalers(self, scaling):
         
-        print("NO XSCALE")
         self.scaler_x = StandardScaler(with_mean=False, with_std=False) # NO XSCALE 
-        #self.scaler_x = StandardScaler() # XSCALE
-        self.scaler_x.fit(self.x_train)  
-        self.x_train_scaled = self.scaler_x.transform(self.x_train) 
+        self.scaler_x.fit(self.x_train)
 
         if scaling=='log':
-            # # logscaler
-            self.scaler_y = FunctionTransformer(func=np.log10, inverse_func=self.pow10) #logscaler
+            self.scaler_y = FunctionTransformer(func=np.log10, inverse_func=self.pow10) 
             self.scaler_y.fit(self.y_train)  
-            self.y_train_scaled = self.scaler_y.transform(self.y_train) 
 
+        elif scaling=='mean':
+            self.scaler_y = StandardScaler() 
+            self.scaler_y.fit(self.y_train)  
+
+        elif scaling=='xrsq':
+            self.scaler_y = FunctionTransformer(func=self.times_rsq, inverse_func=self.div_rsq) 
+            self.scaler_y.fit(self.y_train)  
+
+        elif scaling=='xrsqmean':
+            self.y_train_xrsq_mean = np.mean(self.times_rsq(self.y_train), axis=0)
+            self.y_train_xrsq_std = np.std(self.times_rsq(self.y_train), axis=0)
+            self.scaler_y = FunctionTransformer(func=self.times_rsq_mean, inverse_func=self.div_rsq_mean) 
+            self.scaler_y.fit(self.y_train)  
+
+        else:
+            raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean', 'xrsq', 'xrsqmean']")
+
+    def scale_y_error(self, scaling):
+        
+        if scaling=='log':
             #for log of y, errors are 1/ln(10) * dy/y. dy is error, for y we use the mean.
             #source: https://faculty.washington.edu/stuve/log_error.pdf, https://web.ma.utexas.edu/users/m408n/m408c/CurrentWeb/LM3-6-2.php
-            # our y error is fractional, so we first multiply by the mean to make it absolute:
-            self.y_error *= np.mean(self.y_train, axis=0)
             self.y_error_scaled = 1/np.log(10) * self.y_error / np.mean(self.y_train, axis=0) #logscaler
 
         elif scaling=='mean':
-            #meanscaler
-            self.scaler_y = StandardScaler() #meanscaler
-            self.scaler_y.fit(self.y_train)  
-            self.y_train_scaled = self.scaler_y.transform(self.y_train) 
-
-            # our y error is fractional, so we first multiply by the mean to make it absolute:
-            self.y_error *= np.mean(self.y_train, axis=0)
             self.scaler_y_err = StandardScaler(with_mean=False) #mean false bc don't want to shift it, just rescale by std of training
             #the args to fit are the mean and std used; we want to scale by the same std as we scaled the y_train data by
-            self.scaler_y_err.fit(self.y_train) 
+            self.scaler_y_err.fit(self.y_train)
             self.y_error_scaled = self.scaler_y_err.transform(self.y_error.reshape(1, -1))
             self.y_error_scaled = self.y_error_scaled.flatten()     
             # ends up same as: self.y_error/np.std(self.y_train, axis=0)
 
         elif scaling=='xrsq':
-
-            self.scaler_y = FunctionTransformer(func=self.times_rsq, inverse_func=self.div_rsq) #logscaler
-            self.scaler_y.fit(self.y_train)  
-            self.y_train_scaled = self.scaler_y.transform(self.y_train) 
-
-            #for log of y, errors are 1/ln(10) * dy/y. dy is error, for y we use the mean.
-            #source: https://faculty.washington.edu/stuve/log_error.pdf, https://web.ma.utexas.edu/users/m408n/m408c/CurrentWeb/LM3-6-2.php
-            # our y error is fractional, so we first multiply by the mean to make it absolute:
-            self.y_error *= np.mean(self.y_train, axis=0)
             self.y_error_scaled = self.y_error * self.r_vals**2
 
         elif scaling=='xrsqmean':
-
-            self.scaler_y = FunctionTransformer(func=self.times_rsq_mean, inverse_func=self.div_rsq_mean) #logscaler
-            self.scaler_y.fit(self.y_train)  
-            self.y_train_scaled = self.scaler_y.transform(self.y_train) 
-
-            #for log of y, errors are 1/ln(10) * dy/y. dy is error, for y we use the mean.
-            #source: https://faculty.washington.edu/stuve/log_error.pdf, https://web.ma.utexas.edu/users/m408n/m408c/CurrentWeb/LM3-6-2.php
-            # our y error is fractional, so we first multiply by the mean to make it absolute:
-            self.y_error *= np.mean(self.y_train, axis=0)
+            self.y_train_xrsq_std = np.std(self.times_rsq(self.y_train), axis=0)
             self.y_error_scaled = self.y_error * self.r_vals**2 # xsqr part
             self.y_error_scaled /= self.y_train_xrsq_std # mean part; only std bc don't want to shift it, just rescale by std of training
+            #print("ARTIFICIAL ERRx1.5")
+            #self.y_error_scaled *= 1.5
 
         else:
             raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean']")
+
+    def scale_training_data(self):
+        self.x_train_scaled = self.scaler_x.transform(self.x_train)  
+        self.y_train_scaled = self.scaler_y.transform(self.y_train)  
 
     def scale_testing_data(self):
         self.x_test_scaled = self.scaler_x.transform(self.x_test)  
@@ -228,6 +235,29 @@ class Emulator(object):
         self.scaler_x = joblib.load(self.scaler_x_fn)
         self.scaler_y = joblib.load(self.scaler_y_fn)
 
+    #@profile
+    def predict(self, x_to_predict):
+        # make sure parameters in correct order
+        if type(x_to_predict)==dict:
+            x_to_predict_arr = []
+            for pn in self.param_names_ordered:
+                x_to_predict_arr.append(x_to_predict[pn])
+        elif type(x_to_predict)==list or type(x_to_predict)==np.ndarray:
+            x_to_predict_arr = x_to_predict
+        else:
+            raise ValueError("Params to predict at must be dict or array")
+
+        # scale x
+        x_to_predict_arr = np.atleast_2d(x_to_predict_arr)
+        x_to_predict_scaled = self.scaler_x.transform(x_to_predict_arr)
+
+        # every emu should implement its own predict_scaled
+        y_predict_scaled = self.predict_scaled(x_to_predict_scaled)
+
+        # transform back
+        y_predict = self.scaler_y.inverse_transform(y_predict_scaled)
+        return y_predict
+
     def save_predictions(self, predictions_dir):
         os.makedirs(f'{predictions_dir}', exist_ok=True)
         
@@ -238,11 +268,13 @@ class Emulator(object):
             results = np.array([self.r_vals, y_pred])
             np.savetxt(y_pred_fn, results.T, delimiter=',', fmt=['%f', '%e'])
 
-
     def train(self):
         pass
 
     def test(self):
+        pass
+
+    def predict_scaled(self, x_to_predict_scaled):
         pass
 
     def save_model(self):
@@ -488,9 +520,8 @@ class EmulatorGeorge(Emulator):
         p0 = np.exp(np.full(self.n_params, 0.1))
         k_expsq = george.kernels.ExpSquaredKernel(p0, ndim=self.n_params)
         k_m32 = george.kernels.Matern32Kernel(p0, ndim=self.n_params)
-        k_const = george.kernels.ConstantKernel(0.1, ndim=self.n_params)
-        # this is "M32ExpConst"
-        kernel = k_expsq*k_const + k_m32
+        k_const = george.kernels.ConstantKernel(0.1, ndim=self.n_params)        
+        kernel = k_expsq*k_const + k_m32 # this is "M32ExpConst"
 
         model = george.GP(kernel, mean=np.mean(y_train_scaled_bin), solver=george.BasicSolver)
         model.compute(self.x_train_scaled, y_error_scaled_bin)
@@ -509,33 +540,11 @@ class EmulatorGeorge(Emulator):
 
         return model
 
-    def predict(self, x_to_predict):
-
-        # make sure parameters in correct order
-        if type(x_to_predict)==dict:
-            x_to_predict_arr = []
-            param_names_ordered = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w',
-                                    'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f',
-                                   'f_env', 'delta_env', 'sigma_env']
-            for pn in param_names_ordered:
-                x_to_predict_arr.append(x_to_predict[pn])
-        elif type(x_to_predict)==list or type(x_to_predict)==np.ndarray:
-            x_to_predict_arr = x_to_predict
-        else:
-            raise ValueError("Params to predict at must be dict or array")
-
-        # scale and predict
-        x_to_predict_arr = np.atleast_2d(x_to_predict_arr)
-        x_to_predict_scaled = self.scaler_x.transform(x_to_predict_arr)
-        print("xpredscale:", x_to_predict_scaled)
-        print("ytrainscale:", self.y_train_scaled)
+    def predict_scaled(self, x_to_predict_scaled):
         y_predict_scaled = np.empty(self.n_bins)
         for n in range(self.n_bins):
             y_predict_scaled[n] = self.models[n].predict(self.y_train_scaled[:,n], x_to_predict_scaled, return_cov=False)
-        print("ypredscale:", y_predict_scaled)
-        y_predict = self.scaler_y.inverse_transform(y_predict_scaled)
-        print("ypred:", y_predict)
-        return y_predict
+        return y_predict_scaled
 
     def test(self):
         self.y_predict = np.empty(self.y_test.shape)

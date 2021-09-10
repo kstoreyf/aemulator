@@ -13,7 +13,7 @@ def main(config_fn):
     chain_params_fn = initialize_chain.main(config_fn)
     run(chain_params_fn)
 
-
+#@profile
 def run(chain_params_fn):
     
     f = h5py.File(chain_params_fn, 'r+')
@@ -25,16 +25,9 @@ def run(chain_params_fn):
 
     ### emu params
     # required
-    statistics = f.attrs['statistic']
-    train_tags = f.attrs['traintag']
-    #testtags = f.attrs['testtag']
-    #errtags = f.attrs['errtag']
-    #tags = f.attrs['tag']
-    #kernel_names = f.attrs['kernel_name']
-    # optional
-    logs = f.attrs['log']
-    means = f.attrs['mean']
-    nhods = f.attrs['nhod']
+    statistics = f.attrs['statistics']
+    emu_names = f.attrs['emu_names']
+    scalings = f.attrs['scalings']
 
     ### chain params
     # required
@@ -96,17 +89,19 @@ def run(chain_params_fn):
     print("Building emulators")
     emus = [None]*n_stats
     for i, statistic in enumerate(statistics):
-        Emu = utils.get_emu(train_tags[i])
+        Emu = utils.get_emu(emu_names[i])
         
-        model_fn = f'../models/model_{statistic}{train_tags[i]}' #emu will add proper file ending
-        scaler_x_fn = f'../models/scaler_x_{statistic}{train_tags[i]}.joblib'
-        scaler_y_fn = f'../models/scaler_y_{statistic}{train_tags[i]}.joblib'
+        train_tag = f'_{emu_names[i]}_{scalinga[i]}'
+        model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
+        scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
+        scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
         err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
 
-        emu = Emu(statistic, model_fn, scaler_x_fn, scaler_y_fn, err_fn, train_mode=False, test_mode=True)
+        emu = Emu(statistic, scalings[i], model_fn, scaler_x_fn, scaler_y_fn, err_fn, 
+                  predict_mode=True)
         emu.load_model()
         emus[i] = emu
-        print(f"Emulator for {statistic} built with traintag {train_tags[i]}")
+        print(f"Emulator for {statistic} built with train_tag {train_tag}")
 
     f.close()
 

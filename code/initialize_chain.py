@@ -54,13 +54,13 @@ def emu_config(f, cfg):
     """
 
 
-    required_emu_keys = ['statistic', 'traintag']
+    required_emu_keys = ['statistics', 'emu_names', 'scalings']
     for key in required_emu_keys:
         assert key in cfg, "%s not in config but is required."%key
         f.attrs[key] = cfg[key]
 
     #optional_keys = ['fixed_params', 'emu_hps', 'seed']
-    optional_keys = ['log', 'mean', 'nhod', 'err_fn']
+    optional_keys = ['nhods', 'err_fn']
     #default_vals = [{}, {}, {}, None] #gonna None all these if empty
     # want to clafiy nothing specified
 

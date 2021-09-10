@@ -1,12 +1,19 @@
+import gc
 import h5py
 import multiprocessing as mp
 import numpy as np
+import os
 import pickle
 import scipy
 import time
 
 import dynesty
 from scipy.linalg import sqrtm
+#from schwimmbad import MPIPool
+
+import utils
+
+os.environ["OMP_NUM_THREADS"] = "1"
 
 
 _param_names_cosmo = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w']
@@ -24,14 +31,14 @@ def log_likelihood(theta, param_names, fixed_params, ys_observed, cov):
     emu_pred = np.hstack(emu_preds)
     diff = (np.array(emu_pred) - np.array(ys_observed))/np.array(ys_observed) #fractional error
     diff = diff.flatten()
-    print(ys_observed)
-    print(emu_pred)
-    print(diff)
     # the solve is a better way to get the inverse
     like = -0.5 * np.dot(diff, np.linalg.solve(cov, diff))
     e = time.time()
     print("like call: theta=", theta, "; time=", e-s, "s; like =", like)
     return like
+
+def log_likelihood_const(theta, param_names, fixed_params, ys_observed, cov):
+    return 1
 
 def prior_transform_hypercube(u, param_names):
     v = np.array(u)
@@ -45,7 +52,7 @@ def prior_transform_hypercube(u, param_names):
     params_hod = param_names[idxs_hod]
     for i, pname in zip(idxs_hod, params_hod):
         # all emus should have same bounds, so just get first
-        low, high = _emus[0].get_param_bounds(pname)
+        low, high = _hod_bounds[pname]
         if pname=='M_cut':
             low = 11.5
         v[i] = u[i]*(high-low)+low
@@ -64,13 +71,14 @@ def get_cov_means_for_hypercube_prior(idxs_cosmo_vary):
     hypercube_prior_means = means[idxs_cosmo_vary]
     return hypercube_prior_cov_sqrt, hypercube_prior_means
 
-
+#@profile
 def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results_fn, fixed_params={},
              n_threads=1, dlogz=0.01, seed=None):
 
     print("Dynesty sampling (static) - nongen")
-    global _emus, _hypercube_prior_cov_sqrt, _hypercube_prior_means
+    global _emus, _hod_bounds, _hypercube_prior_cov_sqrt, _hypercube_prior_means
     _emus = emus
+    _hod_bounds = utils.get_hod_bounds()
     num_params = len(param_names)
 
     # Get indices of cosmological parameters that will vary; non-listed params are fixed
@@ -115,12 +123,17 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
     print("vol_dec:", vol_dec, "vol_check:", vol_check)
     print("slices:", slices)
     print("dlogz: ", dlogz)
+    print("n_threads:", n_threads)
 
-    with mp.Pool() as pool:
+    with mp.Pool(processes=n_threads) as pool:
+
         queue_size = n_threads
         if n_threads<=1:
             print("running in serial")
-            pool, queue_size = None, None
+            pool, queue_size = None, 1
+
+        print('mp cpu count:', mp.cpu_count())
+        print("queue size:", queue_size)
 
         print("initialize sampler")
         sampler = dynesty.NestedSampler(
