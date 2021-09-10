@@ -5,6 +5,7 @@ models/
 logs/
 chains/
 .vscode/
+memory_profiling_output/
 
 ## Byte-compiled / optimized / DLL files
 __pycache__/
