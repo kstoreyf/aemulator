@@ -217,7 +217,7 @@ class Emulator(object):
             #self.y_error_scaled *= 1.5
 
         else:
-            raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean']")
+            raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean', 'xrsq', 'xrsqmean']")
 
     def scale_training_data(self):
         self.x_train_scaled = self.scaler_x.transform(self.x_train)  

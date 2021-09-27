@@ -2,8 +2,9 @@ import numpy as np
 
 
 def main():
-    generate_id_pairs_train()
-    generate_id_pairs_test()
+    #generate_id_pairs_train()
+    #generate_id_pairs_test()
+    generate_id_pairs_recovery_test()
 
 # non-overlapping HODs
 def generate_id_pairs_train():

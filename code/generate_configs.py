@@ -1,16 +1,18 @@
 import numpy as np
 
+import utils
 
 
 def main():
-    single()
+    #single()
+    recovery_set()
 
 def single():
     #cosmo, hod = 3, 3
     cosmo, hod = 1, 12
-    statistics = ['wp', 'xi', 'upf', 'mcf', 'xi2']
-    emu_names = [utils.get_fiducial_emu_name[statistic] for statistic in statistics]
-    scalings = [utils.get_fiducial_emu_scaling[statistic] for statistic in statistics]
+    statistics = ['wp', 'xi', 'upf', 'mcf']#, 'xi2']
+    emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
+    scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
     n_threads = utils.get_nthreads(len(statistics))
 
     stat_str = '_'.join(statistics)
@@ -23,17 +25,17 @@ def single():
 def recovery_set():
     ntotal = 21
     ncosmos = 7
-    statistics = ['wp']
-    #statistics = ['wp', 'xi', 'upf', 'mcf', 'xi2']
-    emu_names = [utils.get_fiducial_emu_name[statistic] for statistic in statistics]
-    scalings = [utils.get_fiducial_emu_scaling[statistic] for statistic in statistics]
+    #statistics = ['wp', 'xi2']
+    statistics = ['wp', 'xi', 'upf', 'mcf', 'xi2']
+    emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
+    scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
     n_threads = utils.get_nthreads(len(statistics))
     stat_str = '_'.join(statistics)
     for n in range(ntotal):
         hoddigit = int(n/ncosmos)
         cosmo = n%ncosmos
         hod = cosmo*10 + hoddigit
-        contents = populate_config(statistics, train_tags, cosmo, hod)
+        contents = populate_config(statistics, emu_names, scalings, n_threads, cosmo, hod)
         config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}_c{cosmo}h{hod}.cfg'
         print(config_fn)
         with open(config_fn, 'w') as f:

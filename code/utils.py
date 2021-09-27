@@ -100,7 +100,7 @@ def make_label(statistics):
         stats_nice = [stat_labels[s] for s in statistics]
         return ' + '.join(stats_nice)
 
-def get_fidicial_emu_name(statistic):
+def get_fiducial_emu_name(statistic):
     emu_name_dict = {'wp': 'George',
                      'xi': 'George',
                      'upf': 'George',
@@ -108,12 +108,12 @@ def get_fidicial_emu_name(statistic):
                      'xi2': 'George'}
     return emu_name_dict[statistic]
 
-def get_fidicial_emu_scaling(statistic):
+def get_fiducial_emu_scaling(statistic):
     emu_scaling_dict = {'wp': 'log',
                     'xi': 'log',
                     'upf': 'log',
                     'mcf': 'log',
-                    'xi2': 'xsqrmean'}
+                    'xi2': 'xrsqmean'}
     return emu_scaling_dict[statistic]
 
 def get_nthreads(n_statistics):

@@ -91,7 +91,7 @@ def run(chain_params_fn):
     for i, statistic in enumerate(statistics):
         Emu = utils.get_emu(emu_names[i])
         
-        train_tag = f'_{emu_names[i]}_{scalinga[i]}'
+        train_tag = f'_{emu_names[i]}_{scalings[i]}'
         model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
         scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
         scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'

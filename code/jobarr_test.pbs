@@ -1,18 +1,22 @@
 #!/bin/sh
-#PBS -N chain_wp
+#PBS -N recovery_chain_wp_xi_upf_mcf_xi2
 #PBS -l nodes=1:ppn=24
-
+# test:
+##PBS -t 0-0%1
+# full recovery suite; number after % is number of nodes to use
 #PBS -t 0-20%4
 
-#PBS -o output/$PBS_JOBNAME.out
+#PBS -o logs/$PBS_JOBNAME.out
 #PBS -j oe
   
-#cd $PBS_O_WORKDIR
-echo $PBS_O_WORKDIR
-cd /home/users/ksf293/emulator/code
-echo $PBS_O_WORKDIR
 
-echo "Hello from $PBS_ARRAYID..."
+cd $PBS_O_WORKDIR
+PATH=$PBS_O_PATH
+echo $PBS_O_WORKDIR
+echo 'starting'
+echo -n 'Job is running on node '; cat $PBS_NODEFILE
+echo "Hello from PBS_ARRAYID $PBS_ARRAYID..."
+
 declare -i cosmo #need to declare variables to do arithmetic
 declare -i hoddigit
 declare -i hod
@@ -23,7 +27,10 @@ hoddigit=${PBS_ARRAYID}/ncosmos
 cosmo=${PBS_ARRAYID}%ncosmos
 hod=cosmo*10+hoddigit
 
-stat_str="wp_xi"
+stat_str="wp_xi_upf_mcf_xi2"
 echo "Running chain from config file chains_${stat_str}_c${cosmo}h${hod}.cfg"
+
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate aem
 
 python run_chain.py ../chains/configs/chains_${stat_str}_c${cosmo}h${hod}.cfg
