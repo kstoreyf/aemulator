@@ -2,6 +2,7 @@ import h5py
 import numpy as np
 import pickle
 from matplotlib import pyplot as plt
+from matplotlib import patches as mpatches
 
 import getdist
 from getdist import plots, MCSamples
@@ -69,7 +70,7 @@ def compare_accuracy(statistic, train_tags, labels, colors):
 def plot_accuracy(statistic, train_tag):
     nrows = 3
     fig, axarr = plt.subplots(nrows, 1, figsize=(10,15), gridspec_kw={'height_ratios': [1]*nrows})
-    plt.subplots_adjust(hspace=0.15)
+    plt.subplots_adjust(hspace=0.12)
 
     fn_test = '../tables/id_pairs_test.txt'
     id_pairs_test = np.loadtxt(fn_test, delimiter=',', dtype='int')
@@ -84,7 +85,7 @@ def plot_accuracy(statistic, train_tag):
     ys_test = np.empty((n_test, n_bins))
     ys_pred = np.empty((n_test, n_bins))
 
-    alpha = 0.5
+    alpha = 0.4
     colors = np.empty((n_test, 4)) # 4 for RGBA
     zorders = np.arange(n_test)
     np.random.shuffle(zorders)
@@ -105,17 +106,18 @@ def plot_accuracy(statistic, train_tag):
         if statistic=='xi2':
             y_test *= r_vals**2
             y_pred *= r_vals**2
+            axarr[1].set_ylim(-3,3)
 
         label_obs, label_pred = None, None
         if i==0:
-            label_obs = 'observed'
-            label_pred = 'emu prediction'
+            label_obs = 'Mock'
+            label_pred = 'Emulator prediction'
         axarr[0].plot(r_vals, y_test, color=colors[i], alpha=alpha, label=label_obs, 
                       ls='None', marker='o', markerfacecolor=None, zorder=zorders[i])
         axarr[0].plot(r_vals, y_pred, color=colors[i], alpha=alpha, label=label_pred, 
                       marker=None, zorder=zorders[i]) 
 
-        axarr[1].plot(r_vals, err_frac, color=colors[i], zorder=zorders[i])
+        axarr[1].plot(r_vals, err_frac, color=colors[i], alpha=alpha, zorder=zorders[i])
 
     errs_frac = (ys_pred - ys_test)/ys_test
     #err_frac_mean = np.std(errs_frac, axis=0)
@@ -123,7 +125,14 @@ def plot_accuracy(statistic, train_tag):
     err_frac_p84 = np.percentile(errs_frac, 84, axis=0)
     err_frac_inner68 = (err_frac_p84 - err_frac_p16)/2.0
     #axarr[2].plot(r_vals, err_frac_mean, color='blue', label='error (stdev of fractional error)')
-    axarr[2].plot(r_vals, err_frac_inner68, color='blue', label='error (inner 68%)')
+    #axarr[2].plot(r_vals, err_frac_inner68, color='blue', label='emulator error (inner 68%)')
+    axarr[2].plot(r_vals, err_frac_p16, color='magenta', label='Emulator error (inner 68%)')
+    axarr[2].plot(r_vals, err_frac_p84, color='magenta')
+
+    err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
+    sample_var = np.loadtxt(err_fn)
+    sample_var /= np.sqrt(5)
+    axarr[2].fill_between(r_dict[statistic], -sample_var, sample_var, color='lightblue', alpha=0.5)
 
     axarr[0].set_xscale(scale_dict[statistic][0])
     axarr[0].set_yscale(scale_dict[statistic][1])
@@ -136,7 +145,11 @@ def plot_accuracy(statistic, train_tag):
     axarr[2].set_xscale(scale_dict[statistic][0])
     axarr[2].set_xlabel(r_labels[statistic])
     axarr[2].set_ylabel('error')
-    axarr[2].legend()
+    handles, labels = axarr[2].get_legend_handles_labels()
+    sample_var_patch = mpatches.Patch(color='lightblue', alpha=0.5, label='Sample variance')
+    handles.append(sample_var_patch)
+    axarr[2].legend(handles=handles)
+    axarr[2].axhline(0, color='k', lw=0.5)
 
 
 def plot_contours(chaintags, legend_labels=None, params_toplot=None, colors=None,

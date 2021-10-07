@@ -2,6 +2,7 @@ import argparse
 import h5py 
 import numpy as np
 import os
+import sys
 import time
 
 import initialize_chain
@@ -11,6 +12,8 @@ import utils
 
 def main(config_fn):
     chain_params_fn = initialize_chain.main(config_fn)
+    if chain_params_fn==-1:
+        return # means exists already
     run(chain_params_fn)
 
 #@profile
@@ -85,6 +88,12 @@ def run(chain_params_fn):
     assert cov.shape[0] == n_stats*n_bins_tot and cov.shape[1] == n_stats*n_bins_tot, err_message
     print("Condition number:", np.linalg.cond(cov))
     f.attrs['covariance_matrix'] = cov
+
+    # DO NOT OVERWRITE EXISTING
+    if os.path.exists(chain_results_fn):
+        print(f"Chain {chain_results_fn} already exists, stopping!")
+        return
+        #sys.exit() # THIS LINE BROKE SIROCCO (?!)
 
     print("Building emulators")
     emus = [None]*n_stats

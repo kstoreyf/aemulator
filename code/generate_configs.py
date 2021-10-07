@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 import utils
 
@@ -8,9 +9,9 @@ def main():
     recovery_set()
 
 def single():
-    #cosmo, hod = 3, 3
-    cosmo, hod = 1, 12
-    statistics = ['wp', 'xi', 'upf', 'mcf']#, 'xi2']
+    cosmo, hod = 3, 3
+    #cosmo, hod = 1, 12
+    statistics = ['wp', 'xi', 'upf', 'mcf', 'xi2']
     emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
     scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
     n_threads = utils.get_nthreads(len(statistics))
@@ -23,23 +24,23 @@ def single():
         f.write(contents)
 
 def recovery_set():
-    ntotal = 21
-    ncosmos = 7
-    #statistics = ['wp', 'xi2']
-    statistics = ['wp', 'xi', 'upf', 'mcf', 'xi2']
+    id_pairs = np.loadtxt('../tables/id_pairs_recovery_test_70.txt', delimiter=',', dtype=np.int)
+    #statistics = ['wp', 'xi', 'upf', 'mcf', 'xi2']
+    statistics = ['wp', 'mcf']
+    stat_str = '_'.join(statistics)
     emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
     scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
     n_threads = utils.get_nthreads(len(statistics))
-    stat_str = '_'.join(statistics)
-    for n in range(ntotal):
-        hoddigit = int(n/ncosmos)
-        cosmo = n%ncosmos
-        hod = cosmo*10 + hoddigit
+    for id_pair in id_pairs:
+        cosmo, hod = id_pair
         contents = populate_config(statistics, emu_names, scalings, n_threads, cosmo, hod)
         config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}_c{cosmo}h{hod}.cfg'
-        print(config_fn)
+        if os.path.exists(config_fn):
+            print(f"Config {config_fn} already exists, skipping")
+            continue
         with open(config_fn, 'w') as f:
             f.write(contents)
+        print(f"Wrote config {config_fn}!")
 
 def populate_config(statistics, emu_names, scalings, n_threads, cosmo, hod):
     stat_str = '_'.join(statistics)

@@ -34,7 +34,8 @@ param_labels = {'Omega_m': '\Omega_m',
                 'f': '\gamma_f',
                 'f_env': 'f_{env}',
                 'delta_env': '\delta_{env}',
-                'sigma_env': '\sigma_{env}'}
+                'sigma_env': '\sigma_{env}',
+                'fsigma8': '\gamma_f \, f \, \sigma_8'}
 
 def get_emu(emu_name):
     import emulator

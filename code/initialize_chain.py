@@ -25,6 +25,9 @@ def main(config_fname, plaintext=False):
 
     filename = cfg['save_fn']
 
+    if path.exists(filename):
+         print(f"[Initialize chain] Chain param file {filename} already exists, stopping!")
+         return -1
 
     #assert path.isfile(filename), "%s is not a valid output filename"%filename
     print('Fname', filename)

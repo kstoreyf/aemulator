@@ -32,10 +32,11 @@ def generate_id_pairs_test():
 
 # nice recovery set with non-overlapping HODs
 def generate_id_pairs_recovery_test():
-    fn_recovery = '../tables/id_pairs_recovery_test.txt'
+    #fn_recovery = '../tables/id_pairs_recovery_test.txt'
+    fn_recovery = '../tables/id_pairs_recovery_test_70.txt'
     id_pairs_recovery = []
     ids_cosmo = range(7)
-    n_hods_per_cosmo = 3
+    n_hods_per_cosmo = 10
     for id_cosmo in ids_cosmo:
         id_hod_min = id_cosmo * 10
         id_hod_max = id_hod_min + n_hods_per_cosmo
