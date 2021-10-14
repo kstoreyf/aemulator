@@ -4,6 +4,7 @@ predictions/
 models/
 logs/
 chains/
+covariances/
 .vscode/
 memory_profiling_output/
 
