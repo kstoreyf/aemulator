@@ -1,0 +1,37 @@
+#!/bin/sh
+#PBS -N recovery70_chains
+#PBS -l nodes=1:ppn=24
+# test:
+##PBS -t 0-0%1
+# full recovery suite of 21
+##PBS -t 0-20%1
+# full recovery suite of 70; number after % is number of nodes to use
+#PBS -t 0-69%9
+
+#PBS -o logs/$PBS_JOBNAME.out
+#PBS -j oe
+
+
+cd $PBS_O_WORKDIR
+PATH=$PBS_O_PATH
+echo $PBS_O_WORKDIR
+echo 'starting'
+echo -n 'Job is running on node '; cat $PBS_NODEFILE
+echo "Hello from PBS_ARRAYID $PBS_ARRAYID..."
+
+declare -i cosmo #need to declare variables to do arithmetic
+declare -i hoddigit
+declare -i hod
+declare -i ncosmos
+
+ncosmos=7
+hoddigit=${PBS_ARRAYID}/ncosmos
+cosmo=${PBS_ARRAYID}%ncosmos
+hod=cosmo*10+hoddigit
+
+echo "Running chain set for cosmo $cosmo, hod $hod"
+
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate aem
+
+python run_chain_statset.py $cosmo $hod
