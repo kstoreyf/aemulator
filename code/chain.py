@@ -34,7 +34,7 @@ def log_likelihood(theta, param_names, fixed_params, ys_observed, cov):
     # the solve is a better way to get the inverse
     like = -0.5 * np.dot(diff, np.linalg.solve(cov, diff))
     e = time.time()
-    print("like call: theta=", theta, "; time=", e-s, "s; like =", like)
+    #print("like call: theta=", theta, "; time=", e-s, "s; like =", like)
     return like
 
 def log_likelihood_const(theta, param_names, fixed_params, ys_observed, cov):
@@ -51,18 +51,16 @@ def prior_transform_hypercube(u, param_names):
     idxs_hod = [i for i in range(len(param_names)) if param_names[i] in _param_names_hod]
     params_hod = param_names[idxs_hod]
     for i, pname in zip(idxs_hod, params_hod):
-        # all emus should have same bounds, so just get first
         low, high = _hod_bounds[pname]
         if pname=='M_cut':
             low = 11.5
         v[i] = u[i]*(high-low)+low
-
     return v
 
 def get_cov_means_for_hypercube_prior(idxs_cosmo_vary):
     if len(idxs_cosmo_vary)==0:
         return None, None
-    cosmo = np.loadtxt("/mount/sirocco1/zz681/emulator/CMASS/Gaussian_Process/hod_file/cosmology_camb_full.dat")
+    cosmo = np.loadtxt("../tables/cosmology_camb_full.dat")
     cosmo_good = np.delete(cosmo, 23, axis=0) #something bad about this one, zz did this too
     means = np.mean(cosmo_good, axis=0)
     cov = np.cov(cosmo_good.T)
@@ -137,7 +135,8 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
 
         print("initialize sampler")
         sampler = dynesty.NestedSampler(
-            log_likelihood,
+            #log_likelihood,
+            log_likelihood_const,
             prior_transform_hypercube,
             num_params, logl_args=logl_args, nlive=nlive,
             ptform_args=prior_args, rstate=rstate,

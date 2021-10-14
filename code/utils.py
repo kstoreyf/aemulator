@@ -127,3 +127,40 @@ def get_nthreads(n_statistics):
     else:
         print("Don't know how many threads should use for >5 emus, defaulting to 1")
         return 1
+
+def covariance(arrs, zeromean=False):
+    arrs = np.array(arrs)
+    N = arrs.shape[0]
+
+    if zeromean:
+        w = arrs
+    else:
+        w = arrs - arrs.mean(0)
+
+    outers = np.array([np.outer(w[n], w[n]) for n in range(N)])
+    covsum = np.sum(outers, axis=0)
+    cov = 1.0/float(N-1.0) * covsum
+    return cov
+
+# aka Correlation Matrix
+def reduced_covariance(cov):
+    cov = np.array(cov)
+    Nb = cov.shape[0]
+    reduced = np.zeros_like(cov)
+    for i in range(Nb):
+        ci = cov[i][i]
+        for j in range(Nb):
+            cj = cov[j][j]
+            reduced[i][j] = cov[i][j]/np.sqrt(ci*cj)
+    return reduced
+
+def correlation_to_covariance(corr, cov_orig):
+    corr = np.array(corr)
+    Nb = corr.shape[0]
+    cov = np.zeros_like(corr)
+    for i in range(Nb):
+        ci = cov_orig[i][i]
+        for j in range(Nb):
+            cj = cov_orig[j][j]
+            cov[i][j] = corr[i][j]*np.sqrt(ci*cj)
+    return cov

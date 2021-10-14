@@ -4,19 +4,20 @@ import emulator
 import utils
 
 
-statistic = 'xi2'
+statistic = 'mcf'
 emu_name = 'George'
 #emu_name = 'GPFlowVGP'
 #emu_name = 'PyTorch'
 max_iter = 1000
-scaling = 'xrsqmean'
+scaling = 'log'
+#scaling = 'xrsqmean'
 train_tag = f'_{emu_name}_{scaling}'
 
 predictions_dir = f'../predictions/predictions_{statistic}{train_tag}'
 model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
 scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
 scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
-err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
+err_fn = f"../covariances/error_aemulus_{statistic}_hod3_test0.dat"
 print("Model name:", model_fn)
 
 Emu = utils.get_emu(emu_name)

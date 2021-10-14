@@ -99,14 +99,16 @@ def plot_accuracy(statistic, train_tag):
         _, y_pred = np.loadtxt(y_pred_fn, delimiter=',', unpack=True)
         ys_pred[i,:] = y_pred
 
-        colors[i] = plt.cm.rainbow(color_idx[id_cosmo])
+        colors[i] = plt.cm.terrain(color_idx[id_cosmo])
 
         err_frac = (y_pred - y_test)/y_test
         
+        ylabel = stat_labels[statistic]
         if statistic=='xi2':
             y_test *= r_vals**2
             y_pred *= r_vals**2
             axarr[1].set_ylim(-3,3)
+            ylabel = r'$r^2$' + ylabel
 
         label_obs, label_pred = None, None
         if i==0:
@@ -126,8 +128,8 @@ def plot_accuracy(statistic, train_tag):
     err_frac_inner68 = (err_frac_p84 - err_frac_p16)/2.0
     #axarr[2].plot(r_vals, err_frac_mean, color='blue', label='error (stdev of fractional error)')
     #axarr[2].plot(r_vals, err_frac_inner68, color='blue', label='emulator error (inner 68%)')
-    axarr[2].plot(r_vals, err_frac_p16, color='magenta', label='Emulator error (inner 68%)')
-    axarr[2].plot(r_vals, err_frac_p84, color='magenta')
+    axarr[2].plot(r_vals, err_frac_p16, color='black', label='Emulator error (inner 68%)')
+    axarr[2].plot(r_vals, err_frac_p84, color='black')
 
     err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
     sample_var = np.loadtxt(err_fn)
@@ -136,7 +138,7 @@ def plot_accuracy(statistic, train_tag):
 
     axarr[0].set_xscale(scale_dict[statistic][0])
     axarr[0].set_yscale(scale_dict[statistic][1])
-    axarr[0].set_ylabel(stat_labels[statistic])
+    axarr[0].set_ylabel(ylabel)
     axarr[0].legend()
 
     axarr[1].set_xscale(scale_dict[statistic][0])
