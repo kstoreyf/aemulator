@@ -1,7 +1,9 @@
 #!/bin/bash
 ##PBS -N chain_wp_c1h12_all_nthreads20
 ##PBS -N chain_wp_xi_upf_mcf_c1h12_all_nthreadstest18
-#PBS -N chains_wp_xi_xi2_upf_mcf_c5h52_covsmoothgauss2
+##PBS -N chains_wp_xi_xi2_upf_mcf_c1h12_smallscales
+##PBS -N chains_wp_upf_c1h12_smallscales
+#PBS -N chains_c1h12_minscales
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=24
 #PBS -m ae
@@ -15,8 +17,10 @@ echo 'starting'
 echo -n 'Job is running on node '; cat $PBS_NODEFILE
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate aem
+#python run_chain.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_c1h12_smallscales.cfg
+python run_chain_statset.py 1 12
 #python run_chain.py ../chains/configs/chains_wp_c0h0.cfg
-python run_chain.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_c5h52_covsmoothgauss2.cfg
+#python run_chain.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_c5h52_covemuperf.cfg
 #python run_chain.py ../chains/configs/chains_wp_xi_upf_mcf_xi2_c3h3.cfg
 #python run_chain.py ../chains/configs/chains_wp_xi_xi2_c1h12_covsg1.cfg
 #python run_chain.py ../chains/configs/chains_wp_xi_upf_mcf_c1h12_covsg1_nthreadstest.cfg

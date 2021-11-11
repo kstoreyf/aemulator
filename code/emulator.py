@@ -26,13 +26,20 @@ from sklearn.preprocessing import StandardScaler, FunctionTransformer
 class Emulator(object):
 
     def __init__(self, statistic, scaling, model_fn, scaler_x_fn, scaler_y_fn,
-                 err_fn, train_mode=False, test_mode=False, predict_mode=False):
+                 err_fn, bins=list(range(9)), 
+                 train_mode=False, test_mode=False, predict_mode=False):
         assert np.any(np.array([train_mode, test_mode, predict_mode])), "At least one mode must be True!"
         self.statistic = statistic
         self.model_fn = model_fn
         self.scaler_x_fn = scaler_x_fn
         self.scaler_y_fn = scaler_y_fn
         self.err_fn = err_fn
+        self.bins = bins
+        self.n_bins = len(bins)
+        self.n_bins_tot = 9
+        if self.n_bins < self.n_bins_tot:
+            assert "George" in model_fn, "Using fewer than all the bins only implemented for George emu!"
+
         self.set_training_data() # always need training data, for error (and GP conditioning)
         self.load_y_error()
         self.scale_y_error(scaling)
@@ -87,8 +94,7 @@ class Emulator(object):
 
         ### y values (labels, value of statistics in each bin)
 
-        self.n_bins = 9
-        self.y_train = np.empty((self.n_train, self.n_bins))
+        self.y_train = np.empty((self.n_train, self.n_bins_tot))
         y_train_dir = '/home/users/ksf293/clust/results_aemulus_train'
         for i in range(self.n_train):
             id_cosmo, id_hod = self.id_pairs_train[i]
@@ -137,8 +143,8 @@ class Emulator(object):
         ### y values (labels, value of statistics in each bin)
         # Note: here we are using the mean of 5 boxes with the same parameters
 
-        self.n_bins = 9
-        self.y_test = np.empty((self.n_test, self.n_bins))
+        self.n_bins_tot = 9
+        self.y_test = np.empty((self.n_test, self.n_bins_tot))
         y_test_dir = '/home/users/ksf293/clust/results_aemulus_test_mean'
         for i in range(self.n_test):
             id_cosmo, id_hod = self.id_pairs_test[i]
@@ -255,7 +261,11 @@ class Emulator(object):
         y_predict_scaled = self.predict_scaled(x_to_predict_scaled)
 
         # transform back
-        y_predict = self.scaler_y.inverse_transform(y_predict_scaled)
+        # pad y_predict_scaled before transforming bc scaler expects 9-vector
+        y_predict_scaled_padded = np.zeros(self.n_bins_tot)
+        y_predict_scaled_padded[self.bins] = y_predict_scaled
+        y_predict_padded = self.scaler_y.inverse_transform(y_predict_scaled_padded)
+        y_predict = y_predict_padded[self.bins]
         return y_predict
 
     def save_predictions(self, predictions_dir):
@@ -389,7 +399,7 @@ class EmulatorGPFlowVGP(Emulator):
         #print(y_error_matched)
         y_data = np.vstack([self.y_train_scaled, self.y_error_scaled])
         #y_data = np.hstack([self.y_train_scaled, y_error_matched])
-        #y_data = np.array([self.y_train_scaled, y_error_matched]).reshape(self.n_train, self.n_bins, 2)
+        #y_data = np.array([self.y_train_scaled, y_error_matched]).reshape(self.n_train, self.n_bins_tot, 2)
         print(y_data.shape)
         #y_data = [self.y_train_scaled, self.y_error_scaled]
         #print(y_data.shape)
@@ -449,8 +459,8 @@ class EmulatorGPFlowBinned(Emulator):
         # self.n_train = 50
         # print(self.x_train_scaled.shape)
 
-        self.models = np.empty((self.n_bins), dtype=object)
-        for n in range(self.n_bins):
+        self.models = np.empty((self.n_bins_tot), dtype=object)
+        for n in range(self.n_bins_tot):
             print(f"Training bin {n}")
             lengthscales = np.full(self.n_params, 1.0) # 1.0 is wiggliness
             k_expsq = gpflow.kernels.SquaredExponential(variance=0.1, lengthscales=lengthscales)
@@ -479,22 +489,22 @@ class EmulatorGPFlowBinned(Emulator):
     def test(self):
         self.y_predict = np.empty(self.y_test.shape)
         self.y_predict_scaled = np.empty(self.y_test.shape)
-        for n in range(self.n_bins):
+        for n in range(self.n_bins_tot):
             y_pred, variance = self.models[n].predict_f_compiled(self.x_test_scaled)
             self.y_predict_scaled[:,n] = y_pred.numpy().flatten()
         self.y_predict = self.scaler_y.inverse_transform(self.y_predict_scaled)
  
     def save_model(self):
         os.makedirs(self.model_fn, exist_ok=True)
-        for n in range(self.n_bins):
+        for n in range(self.n_bins_tot):
             self.models[n].predict_f_compiled = tf.function(self.models[n].predict_f, 
                                     input_signature=[tf.TensorSpec(shape=[None, self.n_params], dtype=tf.float64)])
             model_bin_fn = f'{self.model_fn}/model_bin{n}'
             tf.saved_model.save(self.models[n], model_bin_fn)
 
     def load_model(self):
-        self.models = np.empty((self.n_bins), dtype=object)
-        for n in range(self.n_bins):
+        self.models = np.empty((self.n_bins_tot), dtype=object)
+        for n in range(self.n_bins_tot):
             model_bin_fn = f'{self.model_fn}/model_bin{n}'
             self.models[n] = tf.saved_model.load(model_bin_fn)
 
@@ -511,8 +521,8 @@ class EmulatorGeorge(Emulator):
         pool = mp.Pool(processes=n_threads)
 
         models = pool.starmap(self.train_bin, zip(self.y_train_scaled.T, self.y_error_scaled))
-        for n in range(self.n_bins):
-            self.models[n] = models[n]
+        for i, n in enumerate(self.bins):
+            self.models[i] = models[i]
 
 
     def train_bin(self, y_train_scaled_bin, y_error_scaled_bin):
@@ -542,33 +552,37 @@ class EmulatorGeorge(Emulator):
 
     def predict_scaled(self, x_to_predict_scaled):
         y_predict_scaled = np.empty(self.n_bins)
-        for n in range(self.n_bins):
-            y_predict_scaled[n] = self.models[n].predict(self.y_train_scaled[:,n], x_to_predict_scaled, return_cov=False)
+        for i, n in enumerate(self.bins):
+            y_predict_scaled[i] = self.models[i].predict(self.y_train_scaled[:,n], x_to_predict_scaled, return_cov=False)
         return y_predict_scaled
 
     def test(self):
-        self.y_predict = np.empty(self.y_test.shape)
-        self.y_predict_scaled = np.empty(self.y_test.shape)
-        for n in range(self.n_bins):
-            self.y_predict_scaled[:,n] = self.models[n].predict(
+        # need padded versions so that scaler works properly
+        self.y_predict_scaled_padded = np.empty((self.n_test, self.n_bins))
+        for i, n in enumerate(self.bins):
+            # y_predict_scaled_padded index is n because padded; models index is i because only bins
+            self.y_predict_scaled_padded[:,n] = self.models[i].predict(
                                     self.y_train_scaled[:,n], self.x_test_scaled, return_cov=False)
-        self.y_predict = self.scaler_y.inverse_transform(self.y_predict_scaled)
+        self.y_predict_padded = self.scaler_y.inverse_transform(self.y_predict_scaled_padded)
+        self.y_predict_scaled = self.y_predict_scaled_padded[:,bins]
+        self.y_predict = self.y_predict_padded[:,bins]
+
 
     def save_model(self):
         ### pickle method
         os.makedirs(self.model_fn, exist_ok=True)
-        for n in range(self.n_bins):
+        for i, n in enumerate(self.bins):
             model_bin_fn = f'{self.model_fn}/model_bin{n}.pkl'
             with open(model_bin_fn, "wb") as fp:
-                pickle.dump(self.models[n], fp)
+                pickle.dump(self.models[i], fp)
 
     def load_model(self):
         ### pickle method
         self.models = [None]*self.n_bins
-        for n in range(self.n_bins):
+        for i, n in enumerate(self.bins):
             model_bin_fn = f'{self.model_fn}/model_bin{n}.pkl'
             with open(model_bin_fn, "rb") as fp:
-                self.models[n] = pickle.load(fp)
+                self.models[i] = pickle.load(fp)
 
 
 class EmulatorGeorgeOrig(Emulator):
@@ -576,17 +590,17 @@ class EmulatorGeorgeOrig(Emulator):
     def train(self, max_iter=1000):
 
         print("george version:", george.__version__)
-        self.models = [None]*self.n_bins
+        self.models = [None]*self.n_bins_tot
         print("Training commences!")
         print("Constructing pool")
-        pool = mp.Pool(processes=self.n_bins)
+        pool = mp.Pool(processes=self.n_bins_tot)
         print("Mapping bins")
-        res = pool.map(self.train_bin, range(self.n_bins))
+        res = pool.map(self.train_bin, range(self.n_bins_tot))
         print("Done training!")
         print(np.array(res).shape)
         # 37 is len kernel
-        self.hyperparams = np.empty((self.n_bins, 37))
-        for bb in range(self.n_bins):
+        self.hyperparams = np.empty((self.n_bins_tot, 37))
+        for bb in range(self.n_bins_tot):
             #self.hyperparams[bb, :] = res[bb]
             self.models[bb] = res[bb]
 
@@ -635,7 +649,7 @@ class EmulatorGeorgeOrig(Emulator):
     def test(self):
         self.y_predict = np.empty(self.y_test.shape)
         self.y_predict_scaled = np.empty(self.y_test.shape)
-        for n in range(self.n_bins):
+        for n in range(self.n_bins_tot):
             self.y_predict_scaled[:,n] = self.models[n].predict(
                                     self.y_train_scaled[:,n], self.x_test_scaled, return_cov=False)
         self.y_predict = self.scaler_y.inverse_transform(self.y_predict_scaled)
@@ -645,13 +659,13 @@ class EmulatorGeorgeOrig(Emulator):
 
     def save_model(self):
         os.makedirs(self.model_fn, exist_ok=True)
-        for n in range(self.n_bins):
+        for n in range(self.n_bins_tot):
             model_bin_fn = f'{self.model_fn}/model_bin{n}.pkl'
             with open(model_bin_fn, "wb") as fp:
                 pickle.dump(self.models[n], fp)
 
     def load_model(self):
-        for n in range(self.n_bins):
+        for n in range(self.n_bins_tot):
             model_bin_fn = f'{self.model_fn}/model_bin{n}.pkl'
             with open(model_bin_fn, "rb") as fp:
                 self.models[n] = pickle.load(fp)
@@ -680,8 +694,8 @@ class EmulatorGeorgeOrig(Emulator):
     #         raise ValueError("Params to predict at must be dict or array")
 
     #     params_arr = np.atleast_2d(params_arr)
-    #     y_pred = np.zeros(self.n_bins)
-    #     for n in range(self.n_bins):
+    #     y_pred = np.zeros(self.n_bins_tot)
+    #     for n in range(self.n_bins_tot):
     #         # predict on all the training data in the bin
     #         val_pred, cov_pred = self.models[bb].predict(self.y_train_scaled[:,n], params_arr)
     #         val_pred = self.scaler_y.inverse_transform(val_pred)
@@ -701,7 +715,7 @@ class EmulatorGeorgeOrig(Emulator):
     #     self.set_training_data()
     #     self.scale_training_data()
     #     self.hyperparams = np.loadtxt(f'{self.model_fn}.txt')
-    #     for n in range(self.n_bins):
+    #     for n in range(self.n_bins_tot):
     #         p0 = np.exp(np.full(self.n_params, 0.1))
     #         k_expsq = george.kernels.ExpSquaredKernel(p0, ndim=self.n_params)
     #         k_m32 = george.kernels.Matern32Kernel(p0, ndim=self.n_params)
@@ -756,7 +770,7 @@ class EmulatorPyTorch(Emulator):
     def train(self, max_iter=1000):
 
         # Construct model
-        self.model = self.NeuralNetwork(self.n_params, self.n_bins)
+        self.model = self.NeuralNetwork(self.n_params, self.n_bins_tot)
 
         # Set up data
         x_train = Variable(torch.from_numpy(self.x_train_scaled).float())
@@ -764,7 +778,7 @@ class EmulatorPyTorch(Emulator):
         training_set = self.Dataset(x_train, y_train)
         dataloader_params = {'batch_size': 32,
                             'shuffle': True,
-                            'num_workers': self.n_bins}
+                            'num_workers': self.n_bins_tot}
         training_generator = torch.utils.data.DataLoader(training_set, **dataloader_params)
 
         # Set up optimization
@@ -801,7 +815,7 @@ class EmulatorPyTorch(Emulator):
         torch.save(self.model.state_dict(), f'{self.model_fn}.pt')
 
     def load_model(self):  
-        self.model = self.NeuralNetwork(self.n_params, self.n_bins)
+        self.model = self.NeuralNetwork(self.n_params, self.n_bins_tot)
         self.model.load_state_dict(torch.load(f'{self.model_fn}.pt'))
         self.model.eval()
 

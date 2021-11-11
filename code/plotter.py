@@ -69,8 +69,8 @@ def compare_accuracy(statistic, train_tags, labels, colors):
 
 def plot_accuracy(statistic, train_tag):
     nrows = 3
-    fig, axarr = plt.subplots(nrows, 1, figsize=(10,15), gridspec_kw={'height_ratios': [1]*nrows})
-    plt.subplots_adjust(hspace=0.12)
+    fig, axarr = plt.subplots(nrows, 1, figsize=(10,10), sharex=True, gridspec_kw={'height_ratios': [2,1,1]})
+    plt.subplots_adjust(hspace=0)
 
     fn_test = '../tables/id_pairs_test.txt'
     id_pairs_test = np.loadtxt(fn_test, delimiter=',', dtype='int')
@@ -133,30 +133,34 @@ def plot_accuracy(statistic, train_tag):
 
     err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
     sample_var = np.loadtxt(err_fn)
-    sample_var /= np.sqrt(5)
-    axarr[2].fill_between(r_dict[statistic], -sample_var, sample_var, color='lightblue', alpha=0.5)
+    axarr[2].fill_between(r_dict[statistic], -sample_var, sample_var, color='lightblue', alpha=0.7)
+    axarr[2].fill_between(r_dict[statistic], -sample_var/np.sqrt(5), sample_var/np.sqrt(5), color='steelblue', alpha=0.7)
 
     axarr[0].set_xscale(scale_dict[statistic][0])
     axarr[0].set_yscale(scale_dict[statistic][1])
     axarr[0].set_ylabel(ylabel)
     axarr[0].legend()
+    axarr[0].xaxis.set_tick_params(direction='in', which='both')
 
     axarr[1].set_xscale(scale_dict[statistic][0])
+    axarr[1].xaxis.set_tick_params(labelbottom=True)
     axarr[1].set_ylabel('fractional error')
 
     axarr[2].set_xscale(scale_dict[statistic][0])
     axarr[2].set_xlabel(r_labels[statistic])
     axarr[2].set_ylabel('error')
     handles, labels = axarr[2].get_legend_handles_labels()
-    sample_var_patch = mpatches.Patch(color='lightblue', alpha=0.5, label='Sample variance')
+    sample_var_patch = mpatches.Patch(color='lightblue', alpha=0.7, label='Sample variance')
+    sample_var_sqrt_patch = mpatches.Patch(color='steelblue', alpha=0.7, label=r'Sample variance / $\sqrt{N_\mathrm{boxes}}$')
     handles.append(sample_var_patch)
+    handles.append(sample_var_sqrt_patch)
     axarr[2].legend(handles=handles)
     axarr[2].axhline(0, color='k', lw=0.5)
 
 
 def plot_contours(chaintags, legend_labels=None, params_toplot=None, colors=None,
                   legend_loc='upper center', legend_fontsize=20,
-                  vertical_markers=None, vertical_marker_color='grey'):
+                  vertical_markers=None, vertical_marker_color='grey', alpha=0.4):
     # Make dict of bounds for plot ranges
     bounds = utils.get_bounds()
     sample_arr = []
@@ -206,7 +210,7 @@ def plot_contours(chaintags, legend_labels=None, params_toplot=None, colors=None
     marker_args = {'color': vertical_marker_color}
 
     g = getdist.plots.get_subplot_plotter()
-    g.settings.alpha_filled_add=0.4
+    g.settings.alpha_filled_add=alpha
     g.settings.figure_legend_frame = False
     g.settings.legend_fontsize = legend_fontsize
     g.settings.axis_marker_lw = 1.0
@@ -215,3 +219,198 @@ def plot_contours(chaintags, legend_labels=None, params_toplot=None, colors=None
                    legend_labels=legend_labels, markers=vertical_markers_toplot, title_limit=1, legend_loc=legend_loc,
                     marker_args=marker_args, axis_marker_color='red')
     return g
+
+
+def plot_correlation_matrix(corr, statistics):
+
+    nstats = len(statistics)
+    plt.figure(figsize=(2.5*nstats,2.5*nstats))
+    tick_labels = np.concatenate([np.round(r_dict[stat], 2) for stat in statistics])
+    im = plt.imshow(corr, origin='lower left', cmap='bwr_r', vmin=-1, vmax=1)
+    plt.xticks(ticks=range(len(tick_labels)), labels=tick_labels, rotation=90)
+    plt.yticks(ticks=range(len(tick_labels)), labels=tick_labels)
+
+    # Label statistics
+    for i, statistic in enumerate(statistics):
+        plt.text(9*i+3.5, -6, stat_labels[statistic], fontsize=20)
+        plt.text(-6, 9*i+3.5, stat_labels[statistic], fontsize=20, rotation=90)
+        if i==0:
+            continue
+        plt.axvline(9*i-0.5, color='k')
+        plt.axhline(9*i-0.5, color='k')
+
+    plt.xlabel(r"r ($h^{-1}$Mpc)", labelpad=40)
+    plt.ylabel(r"r ($h^{-1}$Mpc)", labelpad=40)
+
+    plt.colorbar(im, fraction=0.046, pad=0.04)
+
+
+def plot_uncertainty_figure(results_dict, prior_dict, params_toplot, stat_strs_toplot, id_pairs, labels, colors, rotation=0,
+                            nrows=2, ncols=2):
+    subfig_width, subfig_height = (6,5)
+    fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
+    plt.subplots_adjust(hspace=0.15, wspace=0.15)
+    
+    count = 0
+    for i in range(nrows):
+        for j in range(ncols):
+            label_xticks = False
+            if i==(nrows-1):
+                label_xticks = True
+            plot_uncertainty_bar_chart(axarr[i,j], results_dict, prior_dict, params_toplot[count], stat_strs_toplot, id_pairs, 
+                                              labels, colors, rotation=rotation, label_xticks=label_xticks)
+            count += 1
+            
+            axarr[i,0].set_ylabel(fr"1/$\sigma$") # set ylabel on 1st column only (order [row, col])
+
+
+def plot_uncertainty_bar_chart(ax, results_dict, prior_dict, param_toplot, stat_strs_toplot, id_pairs, labels, colors, 
+                               rotation=0, label_xticks=False):
+    xvals = range(len(stat_strs_toplot))
+
+    uncertainties = np.empty(len(stat_strs_toplot))
+    uncertainties_id_pairs = []
+    yerrs_lo = np.empty(len(stat_strs_toplot))
+    yerrs_hi = np.empty(len(stat_strs_toplot))
+    for s, stat_str in enumerate(stat_strs_toplot):
+        uncertainties_id_pairs = []
+        for i, id_pair in enumerate(id_pairs):
+            uncertainties_id_pairs.append(results_dict[stat_str][tuple(id_pair)][param_toplot]['uncertainty'])
+        uncertainties[s] = np.mean(uncertainties_id_pairs)
+        means_resampled = bootstrap(np.array(uncertainties_id_pairs), np.mean, n_resamples=100)
+        inverse_means_resampled = 1/means_resampled
+        yerrs_lo[s] = np.percentile(inverse_means_resampled, 16)
+        yerrs_hi[s] = np.percentile(inverse_means_resampled, 84)
+
+    # prior
+    uncertainty_prior = prior_dict[param_toplot]['uncertainty']
+    ax.axhline(1/uncertainty_prior, ls='--', color='grey')
+    ax.text(0.3, 1.05*1/uncertainty_prior, 'prior', color='grey', fontsize=12)
+
+    ax.bar(xvals, 1/uncertainties, yerr=[1/uncertainties-yerrs_lo, yerrs_hi-1/uncertainties], color=colors, width=0.2)#, tick_label=stat_strs)
+    ax.set_xticks(xvals)
+    if label_xticks:
+        ax.set_xticklabels(labels, rotation=rotation)
+    else:
+        ax.set_xticklabels([])
+        
+    ax.set_title(fr'${param_labels[param_toplot]}$')
+
+
+def plot_cumulative_dist_figure(params_toplot, stat_strs_toplot, id_pairs, labels, colors, 
+                                nrows=2, ncols=2, divide_by_error=False, value_to_compare='median'):
+    subfig_width, subfig_height = (6,5)
+    fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
+    plt.subplots_adjust(hspace=0.22, wspace=0.15)
+    
+    count = 0
+    for i in range(nrows):
+        for j in range(ncols):
+            plot_cumulative_dist(axarr[i,j], params_toplot[count], stat_strs_toplot, id_pairs, 
+                                 labels, colors, divide_by_error=divide_by_error, value_to_compare=value_to_compare)
+            count += 1
+            
+            if divide_by_error:
+                axarr[nrows-1,j].set_xlabel(f"({value_to_compare} - truth)/uncertainty")
+            else:
+                axarr[nrows-1,j].set_xlabel(f"{value_to_compare} - truth")
+        axarr[i,0].set_ylabel("fraction (cumulative)")
+            
+    handles, labels = axarr[0,0].get_legend_handles_labels()
+    plt.legend(handles, labels, loc=(1.1,0.8))
+
+
+def plot_cumulative_dist(ax, param_toplot, stat_strs_toplot, id_pairs, labels, colors,
+                         divide_by_error=False, value_to_compare='median'):
+
+    for s, stat_str in enumerate(stat_strs_toplot):
+        deltas = []
+        for i, id_pair in enumerate(id_pairs):
+            mean = results_dict[stat_str][tuple(id_pair)][param_toplot][value_to_compare]
+            truth = results_dict[stat_str][tuple(id_pair)][param_toplot]['truth']
+            uncertainty = results_dict[stat_str][tuple(id_pair)][param_toplot]['uncertainty']
+            if divide_by_error:
+                deltas.append((mean - truth)/uncertainty)
+            else:
+                deltas.append(mean - truth)
+        N = len(deltas)
+        deltas_sorted = np.sort(deltas)
+        cdf_exact = np.array(range(N))/float(N)
+        ax.plot(deltas_sorted, cdf_exact, color=colors[s], label=labels[s], lw=2)
+
+    ax.axvline(0.0, color='k')
+    ax.axhline(0.5, color='k')
+    ax.set_title(fr'${param_labels[param_toplot]}$')
+    if divide_by_error:
+        xx = np.linspace(*ax.get_xlim())
+        ax.plot(xx, norm(0, 1).cdf(xx), color='k', ls='--', label=r'$\mathcal{N}(0,1)$')
+
+
+def adjust_lightness(color, amount=0.5):
+    import matplotlib.colors as mc
+    import colorsys
+    try:
+        c = mc.cnames[color]
+    except:
+        c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+    return colorsys.hls_to_rgb(c[0], max(0, min(1, amount * c[1])), c[2])
+
+
+
+def plot_uncertainty_scales_figure(results_dicts, prior_dict, params_toplot, stat_strs_toplot, id_pairs, labels, colors, 
+                                   scale_labels, rotation=0, nrows=2, ncols=2):
+    subfig_width, subfig_height = (6,5)
+    fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
+    plt.subplots_adjust(hspace=0.15, wspace=0.15)
+    
+    count = 0
+    for i in range(nrows):
+        for j in range(ncols):
+            label_xticks = False
+            if i==(nrows-1):
+                label_xticks = True
+            plot_uncertainty_scales_bar_chart(axarr[i,j], results_dicts, prior_dict, params_toplot[count], stat_strs_toplot, id_pairs, 
+                                              labels, colors, scale_labels, rotation=rotation, label_xticks=label_xticks)
+            count += 1
+            
+            axarr[i,0].set_ylabel(fr"1/$\sigma$") # set ylabel on 1st column only (order [row, col])
+
+    handles, labels = axarr[0,0].get_legend_handles_labels()
+    plt.legend(handles, labels, loc=(1.1,0.8))
+
+
+def plot_uncertainty_scales_bar_chart(ax, results_dicts, prior_dict, param_toplot, stat_strs_toplot, id_pairs, labels, colors, 
+                                      scale_labels, rotation=0, label_xticks=False):
+    xvals = np.arange(len(stat_strs_toplot))
+    lightness_vals = [1.6, 0.4, 1.0]
+ 
+    bar_width = 0.25
+    for r, results_dict in enumerate(results_dicts):
+        uncertainties = np.empty(len(stat_strs_toplot))
+        yerrs_lo = np.empty(len(stat_strs_toplot))
+        yerrs_hi = np.empty(len(stat_strs_toplot))
+        for s, stat_str in enumerate(stat_strs_toplot):
+            uncertainties_id_pairs = []
+            for i, id_pair in enumerate(id_pairs):
+                uncertainties_id_pairs.append(results_dict[stat_str][tuple(id_pair)][param_toplot]['uncertainty'])
+            uncertainties[s] = np.mean(uncertainties_id_pairs)
+            means_resampled = bootstrap(np.array(uncertainties_id_pairs), np.mean, n_resamples=100)
+            inverse_means_resampled = 1/means_resampled
+            yerrs_lo[s] = np.percentile(inverse_means_resampled, 16)
+            yerrs_hi[s] = np.percentile(inverse_means_resampled, 84)
+        colors_adjusted = [adjust_lightness(color, lightness_vals[r]) for color in colors]
+        ax.bar(xvals+r*bar_width, 1/uncertainties, yerr=[1/uncertainties-yerrs_lo, yerrs_hi-1/uncertainties], color=colors_adjusted, width=0.2, label=scale_labels[r])
+
+    # prior
+    uncertainty_prior = prior_dict[param_toplot]['uncertainty']
+    ax.axhline(1/uncertainty_prior, ls='--', color='grey')
+    ax.text(0.3, 1.05*1/uncertainty_prior, 'prior', color='grey', fontsize=12)
+
+    ax.set_xticks(xvals)
+    if label_xticks:
+        ax.set_xticklabels(labels, rotation=rotation)
+    else:
+        ax.set_xticklabels([])
+        
+    ax.set_title(fr'${param_labels[param_toplot]}$')

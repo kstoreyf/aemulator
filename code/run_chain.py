@@ -25,6 +25,8 @@ def run(chain_params_fn):
     # required
     cosmo = f.attrs['cosmo']
     hod = f.attrs['hod']
+    # optional
+    bins = f.attrs['bins']
 
     ### emu params
     # required
@@ -49,6 +51,11 @@ def run(chain_params_fn):
         testing_dir = f'../../clust/results_aemulus_test_mean/results_{statistic}/'
         _, y_obs = np.loadtxt(f'{testing_dir}/{statistic}_cosmo_{cosmo}_HOD_{hod}_mean.dat', 
                                 delimiter=',', unpack=True)
+
+        # if restricting to certain scales, use only those data vector bins
+        if bins is not None:
+            bins_for_stat = bins[i]
+            y_obs = y_obs[bins_for_stat]
         ys_observed.extend(y_obs)
     f.attrs['ys_observed'] = ys_observed
 
@@ -89,6 +96,14 @@ def run(chain_params_fn):
     print("Condition number:", np.linalg.cond(cov))
     f.attrs['covariance_matrix'] = cov
 
+    # If restricting to certain scales, use only those covariance matrix parts
+    bins_for_cov = []
+    for i, statistic in enumerate(statistics):
+        bins_for_stat = bins[i] + i*n_bins_tot #add i*n_bins_tot because need to jump to that square of covmat
+        bins_for_cov.extend(bins_for_stat)
+    cov = cov[bins_for_cov,:][:,bins_for_cov]
+    assert cov.shape[0] == len(np.array(bins).flatten()), "Cov bad shape after restricting to certain scales!"
+
     # DO NOT OVERWRITE EXISTING
     if os.path.exists(chain_results_fn):
         print(f"Chain {chain_results_fn} already exists, stopping!")
@@ -107,7 +122,7 @@ def run(chain_params_fn):
         err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
 
         emu = Emu(statistic, scalings[i], model_fn, scaler_x_fn, scaler_y_fn, err_fn, 
-                  predict_mode=True)
+                  bins=bins[i], predict_mode=True)
         emu.load_model()
         emus[i] = emu
         print(f"Emulator for {statistic} built with train_tag {train_tag}")

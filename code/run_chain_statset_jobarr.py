@@ -15,9 +15,9 @@ def main(cosmo, hod):
     for stat_str in stat_strs:
         print(f'Running chain for stat_str={stat_str} (cosmo {cosmo}, hod {hod})')
 
-        #config_tags = ['_smallscales', '_largescales']
-        min_scales = np.arange(0, 9)
-        config_tags = [f'_minscale{min_scale}' for min_scale in min_scales]
+        config_tags = ['_smallscales', '_largescales']
+        #min_scales = np.arange(0, 9)
+        #config_tags = [f'_minscale{min_scale}' for min_scale in min_scales]
 
         for config_tag in config_tags:
             config_fn = f'../chains/configs/chains_{stat_str}_c{cosmo}h{hod}{config_tag}.cfg'

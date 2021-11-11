@@ -97,6 +97,16 @@ def data_config(f, cfg):
     for key in required_data_keys:
         assert key in cfg, "%s not in config but is required."%key
         f.attrs[key] = cfg[key]
+    
+    optional_keys = ['bins']
+
+    for key in optional_keys:
+        if key in cfg:
+            attr = cfg[key]
+            attr = str(attr) if type(attr) is dict else attr
+            f.attrs[key] = attr
+        else:
+            f.attrs[key] = float("NaN") 
 
 
 def chain_config(f, cfg):

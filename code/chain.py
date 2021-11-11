@@ -135,8 +135,7 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
 
         print("initialize sampler")
         sampler = dynesty.NestedSampler(
-            #log_likelihood,
-            log_likelihood_const,
+            log_likelihood,
             prior_transform_hypercube,
             num_params, logl_args=logl_args, nlive=nlive,
             ptform_args=prior_args, rstate=rstate,
