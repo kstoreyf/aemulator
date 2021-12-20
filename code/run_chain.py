@@ -11,7 +11,8 @@ import utils
 
 
 def main(config_fn):
-    chain_params_fn = initialize_chain.main(config_fn)
+    
+    chain_params_fn = initialize_chain.main(config_fn, overwrite_param_file=False)
     if chain_params_fn==-1:
         return # means exists already
     run(chain_params_fn)
@@ -44,8 +45,12 @@ def run(chain_params_fn):
     seed = f.attrs['seed']
     cov_fn = f.attrs['cov_fn']
 
-    # Set actual calculated observable
     n_stats = len(statistics)
+    n_bins_tot = 9
+    if isinstance(bins, float) and np.isnan(bins):
+        bins = np.array([list(range(0,n_bins_tot))]*n_stats)
+
+    # Set actual calculated observable
     ys_observed = []
     for i, statistic in enumerate(statistics):
         testing_dir = f'../../clust/results_aemulus_test_mean/results_{statistic}/'
@@ -53,9 +58,8 @@ def run(chain_params_fn):
                                 delimiter=',', unpack=True)
 
         # if restricting to certain scales, use only those data vector bins
-        if bins is not None:
-            bins_for_stat = bins[i]
-            y_obs = y_obs[bins_for_stat]
+        bins_for_stat = bins[i]
+        y_obs = y_obs[bins_for_stat]
         ys_observed.extend(y_obs)
     f.attrs['ys_observed'] = ys_observed
 
@@ -90,7 +94,7 @@ def run(chain_params_fn):
         cov = np.loadtxt(cov_fn)
     else:
         raise ValueError(f"Path to covmat {cov_fn} doesn't exist!")
-    n_bins_tot = 9 #the covmat should have been constructed with 9 bins per stat
+    #the covmat should have been constructed with 9 bins per stat
     err_message = f"Cov bad shape! {cov.shape}, but n_bins_tot={n_bins_tot} and n_stats={n_stats}"
     assert cov.shape[0] == n_stats*n_bins_tot and cov.shape[1] == n_stats*n_bins_tot, err_message
     print("Condition number:", np.linalg.cond(cov))

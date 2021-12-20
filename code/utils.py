@@ -234,8 +234,10 @@ def construct_results_dict(chaintag):
     truths = fw.attrs['true_values']
     fw.close()
     
-    chain_results_fn = f'../chains/results/results_{chaintag}.pkl'
+    chain_results_dir = '/export/sirocco1/ksf293/aemulator/chains/results'
+    chain_results_fn = f'{chain_results_dir}/results_{chaintag}.pkl'
     with open(chain_results_fn, 'rb') as pf:
+        #print(chain_results_fn, pf)
         res = pickle.load(pf)
         samples, weights = res.samples, np.exp(res.logwt - res.logz[-1])
         samples_equal = dyfunc.resample_equal(samples, weights)
@@ -266,3 +268,35 @@ def construct_results_dict(chaintag):
         result_dict_single[pn] = sub_dict
         
     return result_dict_single
+
+# Intersection point for min and max scales plot
+
+def line(p1, p2):
+    A = (p1[1] - p2[1])
+    B = (p2[0] - p1[0])
+    C = (p1[0]*p2[1] - p2[0]*p1[1])
+    return A, B, -C
+
+def intersection(L1, L2):
+    D  = L1[0] * L2[1] - L1[1] * L2[0]
+    Dx = L1[2] * L2[1] - L1[1] * L2[2]
+    Dy = L1[0] * L2[2] - L1[2] * L2[0]
+    if D != 0:
+        x = Dx / D
+        y = Dy / D
+        return x,y
+    else:
+        return None
+
+def find_intersection_point(r, a, b):
+    sign = np.sign(a[0]-b[0])
+    assert len(a)==len(b), "Lists a and b must be same length!"
+    for i in range(1,len(a)):
+        sign_prev = sign
+        sign = np.sign(a[i]-b[i])
+        if sign != sign_prev:
+            line_a = line([r[i-1], a[i-1]], [r[i], a[i]])
+            line_b = line([r[i-1], b[i-1]], [r[i], b[i]])
+            intersect = intersection(line_a, line_b)
+            return intersect
+    return None

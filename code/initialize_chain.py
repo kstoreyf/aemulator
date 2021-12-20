@@ -6,7 +6,7 @@ import yaml
 import warnings
 
 
-def main(config_fname, plaintext=False):
+def main(config_fname, overwrite_param_file=False, plaintext=False):
     """
     Control all other processes. Primarily just makes the hdf5 file in the designated
     location, and copies over relevant info to the attrs
@@ -24,10 +24,19 @@ def main(config_fname, plaintext=False):
             cfg = yaml.safe_load(ymlfile)#, Loader=yaml.FullLoader)
 
     filename = cfg['save_fn']
-
-    if path.exists(filename):
+    resultname = cfg['chain']['chain_results_fn']
+    if path.exists(resultname):
+         print(f"[Initialize chain] Chain results file {resultname} already exists, stopping!")
+         return -1
+                           
+    if not overwrite_param_file and path.exists(filename):
          print(f"[Initialize chain] Chain param file {filename} already exists, stopping!")
          return -1
+
+    if overwrite_param_file and path.exists(filename):
+         print(f"[Initialize chain] Note: chain param file {filename} already exists, but \
+             results file {resultname} does not, and overwrite_param_file=True, so overwriting \
+             param file and rerunning chain!")
 
     #assert path.isfile(filename), "%s is not a valid output filename"%filename
     print('Fname', filename)

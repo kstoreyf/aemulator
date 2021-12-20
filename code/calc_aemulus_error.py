@@ -5,7 +5,7 @@ import utils
 
 
 def main():
-    run('wp_xi')
+    run('wp_xi_xi2_upf_mcf')
 
 def run(stat_str):
 

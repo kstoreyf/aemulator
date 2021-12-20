@@ -136,6 +136,7 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
         print("initialize sampler")
         sampler = dynesty.NestedSampler(
             log_likelihood,
+            #log_likelihood_const, # FOR CHECKING PRIOR, JUST NEED TO SWITCH TO THIS
             prior_transform_hypercube,
             num_params, logl_args=logl_args, nlive=nlive,
             ptform_args=prior_args, rstate=rstate,
@@ -150,6 +151,6 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
         print(res.summary())
 
         # save with pickle
-        print("Saving results obejct with pickle")
+        print("Saving results object with pickle")
         with open(chain_results_fn, 'wb') as pickle_file:
             pickle.dump(res, pickle_file)
