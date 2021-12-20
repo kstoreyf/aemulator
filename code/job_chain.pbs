@@ -3,22 +3,37 @@
 ##PBS -N chain_wp_xi_upf_mcf_c1h12_all_nthreadstest18
 ##PBS -N chains_wp_xi_xi2_upf_mcf_c1h12_smallscales
 ##PBS -N chains_wp_upf_c1h12_smallscales
-#PBS -N chains_c1h12_minscales
+#PBS -N chains_wp_xi_xi2_mcf_c3h38_maxscale1
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=24
 #PBS -m ae
 #PBS -o logs/$PBS_JOBNAME.out
 #PBS -j oe
 
-cd $PBS_O_WORKDIR
+
+#cd $PBS_O_WORKDIR
 PATH=$PBS_O_PATH
-echo $PBS_O_WORKDIR
+#echo $PBS_O_WORKDIR
 echo 'starting'
 echo -n 'Job is running on node '; cat $PBS_NODEFILE
+
+# Make sure any symbolic links are resolved to absolute path
+#export PBS_O_WORKDIR=$(readlink -f $PBS_O_WORKDIR)  
+#export ~/aemulator/chains/results=$(readlink -f ~/aemulator/chains/results)
+PBS_O_WORKDIR_MOD=$PBS_O_WORKDIR/..
+echo $PBS_O_WORKDIR
+echo Running in $PBS_O_WORKDIR_MOD
+export PBS_O_WORKDIR_MOD=$(readlink -f $PBS_O_WORKDIR_MOD)
+echo Running in $PBS_O_WORKDIR_MOD
+cd $PBS_O_WORKDIR
+
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate aem
+python run_chain.py ../chains/configs/chains_wp_xi_xi2_mcf_c3h38_maxscale1.cfg
+#python run_chain.py ../chains/configs/chains_prior_seed0.cfg
+#python run_chain.py ../chains/configs/chains_wp_xi_xi2_mcf_c1h12_minscale0.cfg
 #python run_chain.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_c1h12_smallscales.cfg
-python run_chain_statset.py 1 12
+#python run_chain_statset_singles.py 1 12
 #python run_chain.py ../chains/configs/chains_wp_c0h0.cfg
 #python run_chain.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_c5h52_covemuperf.cfg
 #python run_chain.py ../chains/configs/chains_wp_xi_upf_mcf_xi2_c3h3.cfg
