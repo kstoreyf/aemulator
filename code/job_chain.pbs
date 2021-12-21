@@ -3,7 +3,7 @@
 ##PBS -N chain_wp_xi_upf_mcf_c1h12_all_nthreadstest18
 ##PBS -N chains_wp_xi_xi2_upf_mcf_c1h12_smallscales
 ##PBS -N chains_wp_upf_c1h12_smallscales
-#PBS -N chains_wp_xi_xi2_mcf_c3h38_maxscale1
+#PBS -N chains_wp_xi_xi2_upf_mcf_c4h42_covemuperf
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=24
 #PBS -m ae
@@ -29,7 +29,8 @@ cd $PBS_O_WORKDIR
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate aem
-python run_chain.py ../chains/configs/chains_wp_xi_xi2_mcf_c3h38_maxscale1.cfg
+python run_chain.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_c4h42_covemuperf.cfg
+#python run_chain.py ../chains/configs/chains_wp_xi_xi2_mcf_c3h38_maxscale1.cfg
 #python run_chain.py ../chains/configs/chains_prior_seed0.cfg
 #python run_chain.py ../chains/configs/chains_wp_xi_xi2_mcf_c1h12_minscale0.cfg
 #python run_chain.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_c1h12_smallscales.cfg

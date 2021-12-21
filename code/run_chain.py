@@ -53,7 +53,7 @@ def run(chain_params_fn):
     # Set actual calculated observable
     ys_observed = []
     for i, statistic in enumerate(statistics):
-        testing_dir = f'../../clust/results_aemulus_test_mean/results_{statistic}/'
+        testing_dir = f'../../clust/results_aemulus_test_mean/results_{statistic}'
         _, y_obs = np.loadtxt(f'{testing_dir}/{statistic}_cosmo_{cosmo}_HOD_{hod}_mean.dat', 
                                 delimiter=',', unpack=True)
 
