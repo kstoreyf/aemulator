@@ -5,6 +5,7 @@ models/
 logs/
 chains/
 covariances/
+images/
 .vscode/
 memory_profiling_output/
 
