@@ -26,8 +26,15 @@ def main(config_fname, overwrite_param_file=False, plaintext=False):
     filename = cfg['save_fn']
     resultname = cfg['chain']['chain_results_fn']
     if path.exists(resultname):
-         print(f"[Initialize chain] Chain results file {resultname} already exists, stopping!")
+         print(f"[Initialize chain] Chain results file {resultname} already exists in local directory, stopping!")
          return -1
+    
+    # PBS batch system can't see sirocco1, so no point in checking!
+    #resultname_fn = path.basename(resultname)
+    #resultname_in_datadir = f'/export/sirocco1/ksf293/aemulator/chains/results/{resultname_fn}'
+    #if path.exists(resultname_in_datadir):
+    #    print(f"[Initialize chain] Chain results file {resultname_in_datadir} already exists in big data directory, stopping!")
+    #    return -1
                            
     if not overwrite_param_file and path.exists(filename):
          print(f"[Initialize chain] Chain param file {filename} already exists, stopping!")
@@ -109,13 +116,26 @@ def data_config(f, cfg):
     
     optional_keys = ['bins']
 
+    # for bins, need to create a dataset, not an attribute, to handle
+    # diff length bin lists for diff statistics (annoying i know)
+    if 'bins' in cfg:
+        dt = h5py.vlen_dtype(np.dtype('int32'))
+        dset = f.create_dataset('bins', (len(cfg['bins']),), dtype=dt)
+        for i, b_arr in enumerate(cfg['bins']):
+            dset[i] = b_arr
+    else:
+        f.attrs['bins'] = float("NaN")
+
     for key in optional_keys:
         if key in cfg:
+            if key=='bins':
+                continue
             attr = cfg[key]
             attr = str(attr) if type(attr) is dict else attr
             f.attrs[key] = attr
         else:
             f.attrs[key] = float("NaN") 
+
 
 
 def chain_config(f, cfg):

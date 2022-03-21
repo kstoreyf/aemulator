@@ -27,7 +27,11 @@ def run(chain_params_fn):
     cosmo = f.attrs['cosmo']
     hod = f.attrs['hod']
     # optional
-    bins = f.attrs['bins']
+    # for bins, check in attrs and datasets for back compatibility
+    if 'bins' in f.keys():
+        bins = [list(b_arr) for b_arr in f['bins']]
+    else:
+        bins = f.attrs['bins']
 
     ### emu params
     # required
@@ -103,10 +107,10 @@ def run(chain_params_fn):
     # If restricting to certain scales, use only those covariance matrix parts
     bins_for_cov = []
     for i, statistic in enumerate(statistics):
-        bins_for_stat = bins[i] + i*n_bins_tot #add i*n_bins_tot because need to jump to that square of covmat
+        bins_for_stat = np.array(bins[i]) + i*n_bins_tot #add i*n_bins_tot because need to jump to that square of covmat
         bins_for_cov.extend(bins_for_stat)
     cov = cov[bins_for_cov,:][:,bins_for_cov]
-    assert cov.shape[0] == len(np.array(bins).flatten()), "Cov bad shape after restricting to certain scales!"
+    assert cov.shape[0] == sum(len(b_arr) for b_arr in bins), "Cov bad shape after restricting to certain scales!"
 
     # DO NOT OVERWRITE EXISTING
     if os.path.exists(chain_results_fn):

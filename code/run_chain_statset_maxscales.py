@@ -9,9 +9,10 @@ def main(cosmo, hod):
 
     print(f"Running chain set for cosmo {cosmo}, hod {hod}")
     #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
-    stat_strs = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str)
-    stat_strs = np.concatenate((stat_strs, ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2_mcf']))
+    #stat_strs = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str)
+    #stat_strs = np.concatenate((stat_strs, ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2_mcf']))
     #stat_strs = ['wp_xi_xi2_mcf']
+    stat_strs = np.array(['wp_xi_xi2', 'xi_xi2'])
 
     for stat_str in stat_strs:
         print(f'Running chain for stat_str={stat_str} (cosmo {cosmo}, hod {hod})')

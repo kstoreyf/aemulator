@@ -20,29 +20,33 @@ r_labels = {'wp':r'$r_p$ ($h^{-1}$Mpc)', 'upf':"$s$ ($h^{-1}$Mpc)", 'mcf':r"$s$ 
 
 cosmo_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w"]
 hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
+cosmo_withf_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w", "f"]
+hod_nof_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f_env", "delta_env", "sigma_env"]
 key_param_names = ['Omega_m', 'sigma_8', 'M_sat', 'v_bc', 'v_bs', 'f', 'f_env']
 ab_param_names = ["f_env", "delta_env", "sigma_env"]
 param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w", \
                "M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
-param_labels = {'Omega_m': '\Omega_m',
-                'Omega_b': '\Omega_b',
-                'sigma_8': '\sigma_8',
+param_names_freorder = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w", "f", \
+                        "M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f_env", "delta_env", "sigma_env"]     
+param_labels = {'Omega_m': '\Omega_\mathrm{m}',
+                'Omega_b': '\Omega_\mathrm{b}',
+                'sigma_8': '\sigma_\mathrm{8}',
                 'h': 'h',
-                'n_s': 'n_s',
-                'N_eff': 'N_{eff}',
+                'n_s': 'n_\mathrm{s}',
+                'N_eff': 'N_\mathrm{eff}',
                 'w': 'w',
-                'M_sat': 'M_{sat}',
+                'M_sat': 'M_\mathrm{sat}',
                 'alpha': r'\alpha',
-                'M_cut': 'M_{cut}',
-                'sigma_logM': '\sigma_{logM}',
-                'v_bc': 'v_{bc}',
-                'v_bs': 'v_{bs}',
-                'c_vir': 'c_{vir}',
-                'f': '\gamma_f',
-                'f_env': 'f_{env}',
-                'delta_env': '\delta_{env}',
-                'sigma_env': '\sigma_{env}',
-                'fsigma8': '\gamma_f \, f \, \sigma_8'}
+                'M_cut': 'M_\mathrm{cut}',
+                'sigma_logM': '\sigma_{\mathrm{log}M}',
+                'v_bc': 'v_\mathrm{bc}',
+                'v_bs': 'v_\mathrm{bs}',
+                'c_vir': 'c_\mathrm{vir}',
+                'f': '\gamma_\mathrm{f}',
+                'f_env': 'f_\mathrm{env}',
+                'delta_env': '\delta_\mathrm{env}',
+                'sigma_env': '\sigma_\mathrm{env}',
+                'fsigma8': '\gamma_\mathrm{f} \, f \, \sigma_\mathrm{8}'}
 
 def get_emu(emu_name):
     import emulator
@@ -300,3 +304,43 @@ def find_intersection_point(r, a, b):
             intersect = intersection(line_a, line_b)
             return intersect
     return None
+
+
+def compute_uncertainties_from_results(results_dict, stat_strs, params, id_pairs):
+    uncertainties = np.empty((len(params), len(stat_strs)))
+    for p, param in enumerate(params):
+        for s, stat_str in enumerate(stat_strs):
+            uncertainties_id_pairs = []
+            for id_pair in id_pairs:
+                uncertainties_id_pairs.append(results_dict[stat_str][tuple(id_pair)][param]['uncertainty'])
+            uncertainties[p,s] = np.mean(uncertainties_id_pairs)
+    return uncertainties
+
+
+def print_uncertainty_results_abstract(results_dict, params, id_pairs, prior_dict):
+    for j, pn in enumerate(params):    
+
+        print(pn)
+        uncertainty_prior = prior_dict[pn]['uncertainty']
+        print(f"Prior: {uncertainty_prior:.4f}")
+        
+        stat_str_wp = 'wp'
+        stat_str_standard = 'wp_xi_xi2'
+        stat_str_incl_density = 'wp_xi_xi2_upf_mcf'
+        stat_strs = [stat_str_wp, stat_str_standard, stat_str_incl_density]
+        
+        uncertainties_stat_strs = []
+        for stat_str in stat_strs:
+            uncertainties_id_pairs = []
+            for i, id_pair in enumerate(id_pairs):
+                uncertainties_id_pairs.append(results_dict[stat_str][tuple(id_pair)][pn]['uncertainty'])
+            uncertainty = np.mean(uncertainties_id_pairs)
+            uncertainties_stat_strs.append(uncertainty)
+            print(f"{stat_str}: {uncertainty:.4f}")
+
+        idx_standard = stat_strs.index(stat_str_standard)
+        idx_incl_density = stat_strs.index(stat_str_incl_density)
+        uncertainty_change = (uncertainties_stat_strs[idx_incl_density]-uncertainties_stat_strs[idx_standard])/uncertainties_stat_strs[idx_standard]
+        increased_precision = -uncertainty_change
+        print(f"Increased precision from standard to beyond by: {100*increased_precision:.1f}%")
+        print()

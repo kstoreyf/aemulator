@@ -43,11 +43,16 @@ def log_likelihood_const(theta, param_names, fixed_params, ys_observed, cov):
 def prior_transform_hypercube(u, param_names):
     v = np.array(u)
     # the indices of u / param_names that are cosmo
+
+    # For cosmology, use a multi-dimensional Gaussian prior defined by 
+    # the mean and covariance of the cosmology training set parameter space
     idxs_cosmo = [i for i in range(len(param_names)) if param_names[i] in _param_names_cosmo]
     if len(idxs_cosmo)>0:
         dist = scipy.stats.norm.ppf(u[idxs_cosmo])  # convert to standard normal
         v[idxs_cosmo] = np.dot(_hypercube_prior_cov_sqrt, dist) + _hypercube_prior_means
 
+    # For the HOD and assembly bias parameters, as well as gammaf, we use a uniform prior 
+    # with a range given in Table 3 of Zhai+2022, with an additional bound on Mcut
     idxs_hod = [i for i in range(len(param_names)) if param_names[i] in _param_names_hod]
     params_hod = param_names[idxs_hod]
     for i, pname in zip(idxs_hod, params_hod):

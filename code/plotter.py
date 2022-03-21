@@ -249,12 +249,14 @@ def plot_accuracy_figure(statistics, train_tags):
 
         axarr[1].set_xscale(scale_dict[statistic][0])
         axarr[1].xaxis.set_tick_params(labelbottom=True)
-        axarr[1].set_ylabel('frac. err.')
+        #axarr[1].set_ylabel('frac. resid.')
 
         axarr[2].set_xscale(scale_dict[statistic][0])
         axarr[2].set_xlabel(r_labels[statistic])
-        axarr[2].set_ylabel('err.')
+        # spaces are hack to get this label to cover both lower plots
+        axarr[2].set_ylabel('                frac. residual')
         axarr[2].axhline(0, color='k', lw=0.5)
+        
         
         fig.add_subplot(axarr[0])
         fig.add_subplot(axarr[1])
@@ -328,36 +330,46 @@ def plot_contours(chaintags, legend_labels=None, params_toplot=None, colors=None
     g.settings.alpha_filled_add=alpha
     g.settings.figure_legend_frame = False
     g.settings.legend_fontsize = legend_fontsize
+    g.settings.axes_labelsize = 22
+    g.settings.axes_fontsize = 16
     g.settings.axis_marker_lw = 1.0
     g.settings.axis_marker_color = 'dimgrey'
     g.triangle_plot(sample_arr, filled=True, contour_colors=colors, names=params_toplot,
-                   legend_labels=legend_labels, markers=vertical_markers_toplot, title_limit=1, legend_loc=legend_loc,
+                   legend_labels=legend_labels, markers=vertical_markers_toplot, title_limit=0, legend_loc=legend_loc,
                     marker_args=marker_args, axis_marker_color='red')
     return g
 
 
-def plot_correlation_matrix(corr, statistics):
+def plot_correlation_matrix(corr, statistics, show_tick_labels=False):
 
     nstats = len(statistics)
     plt.figure(figsize=(2.5*nstats,2.5*nstats))
-    tick_labels = np.concatenate([np.round(r_dict[stat], 2) for stat in statistics])
     im = plt.imshow(corr, origin='lower left', cmap='bwr_r', vmin=-1, vmax=1)
-    plt.xticks(ticks=range(len(tick_labels)), labels=tick_labels, rotation=90)
-    plt.yticks(ticks=range(len(tick_labels)), labels=tick_labels)
+
+    if show_tick_labels:
+        tick_labels = np.concatenate([np.round(r_dict[stat], 2) for stat in statistics])
+        plt.xticks(ticks=range(len(tick_labels)), labels=tick_labels, rotation=90)
+        plt.yticks(ticks=range(len(tick_labels)), labels=tick_labels)
+        plt.xlabel(r"s ($h^{-1}$Mpc)", labelpad=40)
+        plt.ylabel(r"s ($h^{-1}$Mpc)", labelpad=40)
+        label_offset = -6
+    else:
+        plt.xticks([])
+        plt.yticks([])
+        label_offset = -2.5
 
     # Label statistics
     for i, statistic in enumerate(statistics):
-        plt.text(9*i+3.5, -6, stat_labels[statistic], fontsize=20)
-        plt.text(-6, 9*i+3.5, stat_labels[statistic], fontsize=20, rotation=90)
+
+        plt.text(9*i+2.5, label_offset, stat_labels[statistic], fontsize=20)
+        plt.text(label_offset, 9*i+3, stat_labels[statistic], fontsize=20, rotation=90)
         if i==0:
             continue
         plt.axvline(9*i-0.5, color='k')
         plt.axhline(9*i-0.5, color='k')
 
-    plt.xlabel(r"r ($h^{-1}$Mpc)", labelpad=40)
-    plt.ylabel(r"r ($h^{-1}$Mpc)", labelpad=40)
-
-    plt.colorbar(im, fraction=0.046, pad=0.04)
+    cb = plt.colorbar(im, fraction=0.046, pad=0.04)
+    cb.set_label(label=r'Correlation $C_{ij}/\sqrt{C_{ii}C_{jj}}$', fontsize=20)
 
 
 def plot_uncertainty_figure(results_dict, prior_dict, params_toplot, stat_strs_toplot, id_pairs, labels, colors, rotation=0,
@@ -384,7 +396,6 @@ def plot_uncertainty_bar_chart(ax, results_dict, prior_dict, param_toplot, stat_
     xvals = range(len(stat_strs_toplot))
 
     uncertainties = np.empty(len(stat_strs_toplot))
-    uncertainties_id_pairs = []
     yerrs_lo = np.empty(len(stat_strs_toplot))
     yerrs_hi = np.empty(len(stat_strs_toplot))
     for s, stat_str in enumerate(stat_strs_toplot):
@@ -401,12 +412,12 @@ def plot_uncertainty_bar_chart(ax, results_dict, prior_dict, param_toplot, stat_
     # prior
     uncertainty_prior = prior_dict[param_toplot]['uncertainty']
     ax.axhline(1/uncertainty_prior, ls='--', color='grey')
-    ax.text(0.3, 1.05*1/uncertainty_prior, 'prior', color='grey', fontsize=12)
+    ax.text(0.3, 1.05*1/uncertainty_prior, 'prior', color='grey', fontsize=14)
 
     ax.bar(xvals, 1/uncertainties, yerr=[1/uncertainties-yerrs_lo, yerrs_hi-1/uncertainties], color=colors, width=0.2)#, tick_label=stat_strs)
     ax.set_xticks(xvals)
     if label_xticks:
-        ax.set_xticklabels(labels, rotation=rotation)
+        ax.set_xticklabels(labels, rotation=rotation, fontsize=18)
     else:
         ax.set_xticklabels([])
         
@@ -427,9 +438,9 @@ def plot_cumulative_dist_figure(results_dict, params_toplot, stat_strs_toplot, i
             count += 1
             
             if divide_by_error:
-                axarr[nrows-1,j].set_xlabel(f"({value_to_compare} - truth)/uncertainty")
+                axarr[nrows-1,j].set_xlabel(rf"({value_to_compare}$ - $truth)/uncertainty")
             else:
-                axarr[nrows-1,j].set_xlabel(f"{value_to_compare} - truth")
+                axarr[nrows-1,j].set_xlabel(rf"{value_to_compare}$ - $truth")
         axarr[i,0].set_ylabel("fraction (cumulative)")
             
     handles, labels = axarr[0,0].get_legend_handles_labels()
@@ -460,6 +471,57 @@ def plot_cumulative_dist(results_dict, ax, param_toplot, stat_strs_toplot, id_pa
     if divide_by_error:
         xx = np.linspace(*ax.get_xlim())
         ax.plot(xx, norm(0, 1).cdf(xx), color='k', ls='--', label=r'$\mathcal{N}(0,1)$')
+
+
+def plot_histogram_figure(results_dict, params_toplot, stat_strs_toplot, id_pairs, labels, colors, 
+                                nrows=2, ncols=2, divide_by_error=False, value_to_compare='median'):
+    subfig_width, subfig_height = (6,5)
+    fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
+    plt.subplots_adjust(hspace=0.22, wspace=0.15)
+    
+    count = 0
+    for i in range(nrows):
+        for j in range(ncols):
+            plot_histogram(results_dict, axarr[i,j], params_toplot[count], stat_strs_toplot, id_pairs, 
+                                 labels, colors, divide_by_error=divide_by_error, value_to_compare=value_to_compare)
+            count += 1
+            
+            if divide_by_error:
+                axarr[nrows-1,j].set_xlabel(f"({value_to_compare} - truth)/uncertainty")
+            else:
+                axarr[nrows-1,j].set_xlabel(f"{value_to_compare} - truth")
+        axarr[i,0].set_ylabel("count")
+            
+    handles, labels = axarr[0,0].get_legend_handles_labels()
+    plt.legend(handles, labels, loc=(1.1,0.8))
+
+
+def plot_histogram(results_dict, ax, param_toplot, stat_strs_toplot, id_pairs, labels, colors,
+                         divide_by_error=False, value_to_compare='median'):
+
+    deltas = np.empty((len(stat_strs_toplot), len(id_pairs)))
+    for s, stat_str in enumerate(stat_strs_toplot):
+        for i, id_pair in enumerate(id_pairs):
+            mean = results_dict[stat_str][tuple(id_pair)][param_toplot][value_to_compare]
+            truth = results_dict[stat_str][tuple(id_pair)][param_toplot]['truth']
+            uncertainty = results_dict[stat_str][tuple(id_pair)][param_toplot]['uncertainty']
+            if divide_by_error:
+                deltas[s,i] = (mean - truth)/uncertainty
+            else:
+                deltas[s,i] = (mean - truth)
+
+    #bins = np.linspace(np.min(deltas), np.max(deltas), 12) 
+    bins = 20
+    for s, stat_str in enumerate(stat_strs_toplot):    
+        ax.hist(deltas[s], bins=bins, color=colors[s], label=labels[s], lw=2, histtype='step')
+
+    ax.axvline(0.0, color='k')
+    # ax.axhline(0.5, color='k')
+    ax.set_title(fr'${param_labels[param_toplot]}$')
+    # if divide_by_error:
+    #     xx = np.linspace(*ax.get_xlim())
+    #     ax.plot(xx, norm(0, 1).cdf(xx), color='k', ls='--', label=r'$\mathcal{N}(0,1)$')
+
 
 # copied from https://stackoverflow.com/a/49601444
 def adjust_lightness(color, amount=0.5):
@@ -576,7 +638,8 @@ def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplo
             count += 1
             
     handles, labels = axarr[0,0].get_legend_handles_labels()
-    plt.legend(handles, labels, loc=(1.1,0.8))
+    #plt.legend(handles, labels, loc=(1.1,0.8)) # right side legend
+    plt.legend(handles, labels, loc='upper center', bbox_to_anchor=(-0.08,3.4))
 
 
 def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, stat_strs_toplot, id_pairs, labels, colors, 
