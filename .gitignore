@@ -8,6 +8,8 @@ covariances/
 images/
 .vscode/
 memory_profiling_output/
+data_products/
+plots/
 
 ## Byte-compiled / optimized / DLL files
 __pycache__/
