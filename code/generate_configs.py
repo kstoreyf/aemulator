@@ -2,7 +2,7 @@ import numpy as np
 import os
 
 import utils
-
+from utils import rbins, rlin
 
 def main():
     #single()
@@ -76,7 +76,7 @@ def scale_analysis_set():
     #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
     #stat_strs = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str) 
     #stat_strs = np.concatenate((stat_strs, ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2_mcf']))
-    stat_strs = np.array(['wp_xi_xi2', 'xi_xi2'])
+    stat_strs = np.array(['wp_xi_xi2_upf_mcf'])
     #stat_strs = ['wp_xi_xi2_mcf']
     #min_scales = np.array([0])
     #min_scales = np.arange(0, 9)
@@ -90,10 +90,27 @@ def scale_analysis_set():
             cosmo, hod = id_pair
             for max_scale in max_scales:
             #for min_scale in min_scales:
-                #bins = [list(range(min_scale, 9))]*len(statistics) # for n_bins_tot = 9 
-                #config_tag = f'_minscale{min_scale}'
+                # bins = [list(range(min_scale, 9))]*len(statistics) # for n_bins_tot = 9 
+                # config_tag = f'_minscale{min_scale}'
                 bins = [list(range(0, max_scale+1))]*len(statistics) # for n_bins_tot = 9; +1 bc should be inclusive
                 config_tag = f'_maxscale{max_scale}'
+
+                # if UPF in list, get it's special bins to align it with the others
+                print(rbins)
+                print(rlin)
+                if 'upf' in statistics:
+                    idx_upf = statistics.index('upf')
+                    bins[idx_upf] = match_bins(rbins, rlin, minscale_idx=0, maxscale_idx=max_scale)  
+                    #bins[idx_upf] = match_bins(rbins, rlin, minscale_idx=min_scale, maxscale_idx=8) 
+                    
+                    print('max scale idx:', max_scale)
+                    print('max scale:', rbins[max_scale], rbins[max_scale+1])
+                    print('upf bins:', rlin[bins[idx_upf]])
+                    #print(bins)     
+                    config_tag += '_upfmatch'    
+                
+                continue 
+
                 contents = populate_config(config_tag, statistics, emu_names, scalings, n_threads, cosmo, hod, bins)
                 config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}_c{cosmo}h{hod}{config_tag}.cfg'
                 if os.path.exists(config_fn) and not overwrite:
@@ -102,6 +119,18 @@ def scale_analysis_set():
                 with open(config_fn, 'w') as f:
                     f.write(contents)
                 print(f"Wrote config {config_fn}!")
+
+
+# minscaleN refers to min N bins from bins1, which should be 
+# the log-scaled bins for our purposes. 
+# bins are bin averages, or radii for UPF
+# e.g. minscale0  
+def match_bins(bins1, bins2, minscale_idx, maxscale_idx):
+    minscale_val = bins1[minscale_idx]
+    maxscale_val = bins1[maxscale_idx+1] # because want top bin edge
+    bins2_idxs = np.where((minscale_val < bins2) & (bins2 < maxscale_val))[0]
+    return list(bins2_idxs)
+
 
 def populate_config(config_tag, statistics, emu_names, scalings, n_threads, cosmo, hod, bins):
     stat_str = '_'.join(statistics)

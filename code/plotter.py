@@ -274,7 +274,7 @@ def plot_accuracy_figure(statistics, train_tags):
     plt.legend(handles=handles, fontsize=18, loc=(1.3, 0.9))
 
 
-def plot_contours(chaintags, legend_labels=None, params_toplot=None, colors=None,
+def plot_contours(chaintags, legend_labels=[], params_toplot=None, colors=None,
                   legend_loc='upper center', legend_fontsize=20,
                   vertical_markers=None, vertical_marker_color='grey', alpha=0.4):
     # Make dict of bounds for plot ranges
@@ -617,7 +617,7 @@ def plot_uncertainty_scales_bar_chart(ax, results_dicts, prior_dict, param_toplo
 def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplot, stat_strs_toplot, 
                                  id_pair, labels, colors, 
                                  rotation=0, nrows=2, ncols=2, lss=None, lws=None,
-                                 comparison_dicts=None, xlabel=None):
+                                 comparison_dicts=None, xlabel=None, show_top_axis=True):
     subfig_width, subfig_height = (6,5)
     fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
     plt.subplots_adjust(hspace=0.35, wspace=0.15)
@@ -631,7 +631,8 @@ def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplo
             plot_scale_dependence(axarr[i,j], scales, results_dicts, prior_dict, params_toplot[count], 
                                   stat_strs_toplot, id_pair, labels, colors, 
                                   rotation=rotation, label_xticks=label_xticks,
-                                  lss=lss, lws=lws, comparison_dicts=comparison_dicts, xlabel=xlabel)
+                                  lss=lss, lws=lws, comparison_dicts=comparison_dicts, xlabel=xlabel,
+                                  show_top_axis=show_top_axis)
             
             axarr[i,0].set_ylabel(r"1/$\sigma$") # set ylabel on 1st column only (order [row, col])
             
@@ -644,7 +645,7 @@ def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplo
 
 def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, stat_strs_toplot, id_pairs, labels, colors, 
                           rotation=0, label_xticks=False, lss=None, lws=None, 
-                          comparison_dicts=None, xlabel=None):
+                          comparison_dicts=None, xlabel=None, show_top_axis=True):
     
     if lss is None:
         lss = ['-']*len(stat_strs_toplot)
@@ -678,12 +679,12 @@ def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, s
             #ax.plot(rlog, 1/uncertainties_scales_comp, marker='None', color=colors[s], 
             #        ls=lss[s], lw=lws[s], alpha=0.5)
             
-            
-    ax_t = ax.twiny()  # instantiate a second axes that shares the same x-axis
-    ax_t.tick_params(axis='y')
-    ax_t.set_xscale('linear')
-    ax_t.set_xticks(np.log10(rlog))
-    ax_t.set_xticklabels([int(r) for r in rlin])
+    if show_top_axis:
+        ax_t = ax.twiny()  # instantiate a second axes that shares the same x-axis
+        ax_t.tick_params(axis='y')
+        ax_t.set_xscale('linear')
+        ax_t.set_xticks(np.log10(rlog))
+        ax_t.set_xticklabels([int(r) for r in rlin])
     
     # prior
     uncertainty_prior = prior_dict[param_toplot]['uncertainty']

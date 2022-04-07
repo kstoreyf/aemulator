@@ -4,7 +4,7 @@ import utils
 
 
 def main():
-    run('wp')
+    run('xi_xi2')
 
 def run(stat_str):
 

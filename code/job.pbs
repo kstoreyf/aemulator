@@ -1,0 +1,20 @@
+#!/bin/bash
+##PBS -N train_emu_mcf_George_log
+#PBS -N build_result_dicts
+#PBS -l walltime=1000:00:00
+#PBS -l nodes=1:ppn=12
+#PBS -m ae
+#PBS -o logs/$PBS_JOBNAME.out
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+PATH=$PBS_O_PATH
+echo $PBS_O_WORKDIR
+echo 'starting'
+echo -n 'Job is running on node '; cat $PBS_NODEFILE
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate aem
+#python run_emulator.py
+python build_result_dicts.py
+echo 'done'
+
