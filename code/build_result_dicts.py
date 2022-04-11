@@ -38,7 +38,7 @@ def run_scale_dicts():
     #stat_strs_scale = np.concatenate((stat_strs_single, ['wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']))
     stat_strs_scale = np.concatenate((stat_strs_single, ['xi_xi2', 'wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']))
     #stat_strs_scale = np.concatenate((stat_strs_single, ['wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']))
-    extra_tag = '_more'
+    extra_tag = '_upfmatch'
     #extra_tag = ''
     min_scales = np.arange(0,9)
     fn_results_dict_minscales = f'{results_dict_dir}/results_dict_minscales{extra_tag}.npy'
@@ -79,7 +79,10 @@ def build_dict_scales(stat_strs, id_pairs, config_subtag, fn_results_dict, scale
             print(stat_str)
             for id_pair in id_pairs:
                 id_cosmo, id_hod = id_pair
-                chaintag = f'{stat_str}_c{id_cosmo}h{id_hod}_all{config_tag}'
+                if 'upf' in stat_str and len(stat_str.split('_'))>1:
+                    chaintag = f'{stat_str}_c{id_cosmo}h{id_hod}_all{config_tag}_upfmatch'
+                else:
+                    chaintag = f'{stat_str}_c{id_cosmo}h{id_hod}_all{config_tag}'
                 results_dict_m[stat_str][tuple(id_pair)] = utils.construct_results_dict(chaintag)
         results_dict[scale] = results_dict_m
 

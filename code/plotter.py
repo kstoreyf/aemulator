@@ -660,8 +660,11 @@ def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, s
             for i, id_pair in enumerate(id_pairs):
                 uncertainties_scales_idpairs[i] = results_dicts[scale][stat_str][tuple(id_pair)][param_toplot]['uncertainty'] 
             uncertainties_scales[m] = np.mean(uncertainties_scales_idpairs)
-            
-        ax.plot(rlog, 1/uncertainties_scales, marker='None', color=colors[s], label=labels[s], ls=lss[s], lw=lws[s])
+        
+        r_plot = rlog
+        if stat_str=='upf':
+            r_plot = rlin
+        ax.plot(r_plot, 1/uncertainties_scales, marker='None', color=colors[s], label=labels[s], ls=lss[s], lw=lws[s])
         ax.set_xscale('log')
         
         if comparison_dicts is not None:
@@ -674,7 +677,7 @@ def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, s
                     uncertainties_scales_idpairs_comp[i] = comparison_dicts[scale][stat_str][tuple(id_pair)][param_toplot]['uncertainty'] 
                 uncertainties_scales_comp[m] = np.mean(uncertainties_scales_idpairs_comp)
             
-            r_intersect, y_intersect = utils.find_intersection_point(rlog, 1/uncertainties_scales, 1/uncertainties_scales_comp)
+            r_intersect, y_intersect = utils.find_intersection_point(r_plot, 1/uncertainties_scales, 1/uncertainties_scales_comp)
             ax.plot(r_intersect, y_intersect, marker='|', markersize=20, color=colors[s])
             #ax.plot(rlog, 1/uncertainties_scales_comp, marker='None', color=colors[s], 
             #        ls=lss[s], lw=lws[s], alpha=0.5)
