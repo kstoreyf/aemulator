@@ -11,12 +11,28 @@ nbins = 9
 rbins = np.logspace(np.log10(0.1), np.log10(50), nbins + 1) # Note the + 1 to nbins
 rlog = 10 ** (0.5 * (np.log10(rbins)[1:] + np.log10(rbins)[:-1]))
 rlin = np.linspace(5, 45, 9)
-r_dict = {'wp': rlog, 'xi': rlog, 'upf': rlin, 'mcf': rlog, 'xi2': rlog}
-scale_dict = {'wp': ('log', 'log'), 'xi': ('log', 'log'), 'upf': ('linear', 'log'), 'mcf': ('log', 'linear'), 'xi2': ('log', 'linear')} #x, y
+r_dict = {'wp': rlog, 'xi': rlog, 'upf': rlin, 'mcf': rlog, 'xi2': rlog, 'wp80': rlog}
+scale_dict = {'wp': ('log', 'log'), 
+              'xi': ('log', 'log'), 
+              'upf': ('linear', 'log'), 
+              'mcf': ('log', 'linear'), 
+              'xi2': ('log', 'linear'),
+              'wp80': ('log', 'log')} #x, y
+
 #stat_labels = {'wp':r'$w_p$($r_p$)', 'upf':r"P$_U$(r)", 'mcf':r"M($r$)", 'xi':r"$\xi_0$($r$)", 'xi2':r"$\xi_2$($r$)"}
 #r_labels = {'wp':r'$r_p (h^{-1}$Mpc)', 'upf':r"$r (h^{-1}$Mpc)", 'mcf':r"$r (h^{-1}$Mpc)", 'xi':r"$r (h^{-1}$Mpc)", 'xi2':r"$r (h^{-1}$Mpc)"}
-stat_labels = {'wp':r'$w_p$($r_p$)', 'upf':r"$P_U(s)$", 'mcf':r"$M(s)$", 'xi':r"$\xi_0(s)$", 'xi2':r"$\xi_2(s)$"}
-r_labels = {'wp':r'$r_p$ ($h^{-1}$Mpc)', 'upf':"$s$ ($h^{-1}$Mpc)", 'mcf':r"$s$ ($h^{-1}$Mpc)", 'xi':r"$s$ ($h^{-1}$Mpc)", 'xi2':r"$s$ ($h^{-1}$Mpc)"}
+stat_labels = {'wp':r'$w_\mathrm{p}$($r_\mathrm{p}$)', 
+               'upf':r"$P_\mathrm{U}(s)$", 
+               'mcf':r"$M(s)$", 
+               'xi':r"$\xi_0(s)$", 
+               'xi2':r"$\xi_2(s)$",
+               'wp80':r'$w_\mathrm{p}$($r_\mathrm{p}$), $\pi_\mathrm{max}=80$'}
+r_labels = {'wp':r'$r_\mathrm{p}$ ($h^{-1}\,\mathrm{Mpc}$)', 
+            'upf':r"$s$ ($h^{-1}\,\mathrm{Mpc}$)", 
+            'mcf':r"$s$ ($h^{-1}\,\mathrm{Mpc}$)", 
+            'xi':r"$s$ ($h^{-1}\,\mathrm{Mpc}$)", 
+            'xi2':r"$s$ ($h^{-1}\,\mathrm{Mpc}$)",
+            'wp80':r'$r_\mathrm{p}$ ($h^{-1}\,\mathrm{Mpc}$)'}
 
 cosmo_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w"]
 hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
@@ -117,7 +133,8 @@ def get_fiducial_emu_name(statistic):
                      'xi': 'George',
                      'upf': 'George',
                      'mcf': 'George',
-                     'xi2': 'George'}
+                     'xi2': 'George',
+                     'wp80': 'George'}
     return emu_name_dict[statistic]
 
 def get_fiducial_emu_scaling(statistic):
@@ -125,7 +142,8 @@ def get_fiducial_emu_scaling(statistic):
                     'xi': 'log',
                     'upf': 'log',
                     'mcf': 'log',
-                    'xi2': 'xrsqmean'}
+                    'xi2': 'xrsqmean',
+                    'wp80': 'log'}
     return emu_scaling_dict[statistic]
 
 def get_nthreads(n_statistics):

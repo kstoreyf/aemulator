@@ -5,7 +5,7 @@ import utils
 
 
 def main():
-    run('wp_xi_xi2_upf_mcf')
+    run('wp80')
 
 def run(stat_str):
 
@@ -28,7 +28,7 @@ def run(stat_str):
     for i, statistic in enumerate(statistics):
         testing_dir = f'../../clust/results_aemulus_test/results_{statistic}'
         devmean_arr.append(calculate_devmeans(testing_dir, statistic, hod, cosmos, boxes, tests))
-    
+   
     #compute covariance assuming the mean is zero, as that is the expectation value (should be unbiased)
     devmeans = np.concatenate(devmean_arr, axis=1)
     cov = utils.covariance(devmeans, zeromean=True)
@@ -36,17 +36,17 @@ def run(stat_str):
     cov_fn = f"{res_dir}/cov_aemulus_{stat_str}{errtag}.dat"
     print(f"Saving to {cov_fn}")
     np.savetxt(cov_fn, cov)
-
     # save error for gp input error, and percentiles 
     # note that this is slightly different than standard dev, because of zero mean covariance
     err = np.diag(cov)
     np.savetxt(f"{res_dir}/error_aemulus_{stat_str}{errtag}.dat", err)
-    
+    print('Error:', err)
+
     p16 = np.percentile(devmeans, 16, axis=0)
     p84 = np.percentile(devmeans, 84, axis=0)
     np.savetxt(f"{res_dir}/p16_aemulus_{stat_str}{errtag}.dat", p16)
     np.savetxt(f"{res_dir}/p84_aemulus_{stat_str}{errtag}.dat", p84)
-
+   
 
 
 def calculate_devmeans(testing_dir, statistic, hod, cosmos, boxes, tests):

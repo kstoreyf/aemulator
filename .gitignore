@@ -6,6 +6,7 @@ logs/
 chains/
 covariances/
 images/
+paper/images*/
 .vscode/
 memory_profiling_output/
 data_products/

@@ -61,6 +61,7 @@ class Emulator(object):
                                    'f_env', 'delta_env', 'sigma_env']
 
     def load_y_error(self):
+        # TODO: check what this error is / should be - std or variance?
         self.y_error = np.loadtxt(self.err_fn)
         # our y error is fractional, so we first multiply by the mean to make it absolute:
         self.y_error *= np.mean(self.y_train, axis=0)
@@ -564,8 +565,8 @@ class EmulatorGeorge(Emulator):
             self.y_predict_scaled_padded[:,n] = self.models[i].predict(
                                     self.y_train_scaled[:,n], self.x_test_scaled, return_cov=False)
         self.y_predict_padded = self.scaler_y.inverse_transform(self.y_predict_scaled_padded)
-        self.y_predict_scaled = self.y_predict_scaled_padded[:,bins]
-        self.y_predict = self.y_predict_padded[:,bins]
+        self.y_predict_scaled = self.y_predict_scaled_padded[:,self.bins]
+        self.y_predict = self.y_predict_padded[:,self.bins]
 
 
     def save_model(self):

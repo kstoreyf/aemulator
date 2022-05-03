@@ -115,7 +115,7 @@ def plot_accuracy(statistic, train_tag):
         label_obs, label_pred = None, None
         if i==0:
             label_obs = 'Mock'
-            label_pred = 'Emulator prediction'
+            label_pred = 'Emulator prediction         '
         axarr[0].plot(r_vals, y_test, color=colors[i], alpha=alpha, label=label_obs, 
                       ls='None', marker='o', markerfacecolor=None, zorder=zorders[i])
         axarr[0].plot(r_vals, y_pred, color=colors[i], alpha=alpha, label=label_pred, 
@@ -133,10 +133,12 @@ def plot_accuracy(statistic, train_tag):
     axarr[2].plot(r_vals, err_frac_p16, color='black', label='Emulator error (inner 68%)')
     axarr[2].plot(r_vals, err_frac_p84, color='black')
 
-    err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
+    #err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
+    err_fn = f"../covariances/error_aemulus_{statistic}_hod3_test0.dat"
     sample_var = np.loadtxt(err_fn)
-    axarr[2].fill_between(r_dict[statistic], -sample_var, sample_var, color='lightblue', alpha=0.7)
-    axarr[2].fill_between(r_dict[statistic], -sample_var/np.sqrt(5), sample_var/np.sqrt(5), color='steelblue', alpha=0.7)
+    sample_std = np.sqrt(sample_var)
+    axarr[2].fill_between(r_dict[statistic], -sample_std, sample_std, color='lightblue', alpha=0.7)
+    axarr[2].fill_between(r_dict[statistic], -sample_std/np.sqrt(5), sample_std/np.sqrt(5), color='steelblue', alpha=0.7)
 
     axarr[0].set_xscale(scale_dict[statistic][0])
     axarr[0].set_yscale(scale_dict[statistic][1])
@@ -218,8 +220,8 @@ def plot_accuracy_figure(statistics, train_tags):
 
             label_obs, label_pred = None, None
             if i==0:
-                label_obs = 'Mock'
-                label_pred = 'Emulator prediction'
+                label_obs = 'Mock value'
+                label_pred = 'Emulator prediction          '
             axarr[0].plot(r_vals, y_test, color=colors[i], alpha=alpha, label=label_obs,
                           ls='None', marker='o', markerfacecolor=None, zorder=zorders[i])
             axarr[0].plot(r_vals, y_pred, color=colors[i], alpha=alpha, label=label_pred,
@@ -237,10 +239,13 @@ def plot_accuracy_figure(statistics, train_tags):
         axarr[2].plot(r_vals, err_frac_p16, color='black', label='Emulator error (inner 68%)')
         axarr[2].plot(r_vals, err_frac_p84, color='black')
 
-        err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
+        #err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
+        err_fn = f"../covariances/error_aemulus_{statistic}_hod3_test0.dat"
         sample_var = np.loadtxt(err_fn)
-        axarr[2].fill_between(r_dict[statistic], -sample_var, sample_var, color='lightblue', alpha=0.7)
-        axarr[2].fill_between(r_dict[statistic], -sample_var/np.sqrt(5), sample_var/np.sqrt(5), color='steelblue', alpha=0.7)
+        sample_std = np.sqrt(sample_var)
+        print(sample_var)
+        axarr[2].fill_between(r_dict[statistic], -sample_std, sample_std, color='lightblue', alpha=0.7)
+        axarr[2].fill_between(r_dict[statistic], -sample_std/np.sqrt(5), sample_std/np.sqrt(5), color='steelblue', alpha=0.7)
 
         axarr[0].set_xscale(scale_dict[statistic][0])
         axarr[0].set_yscale(scale_dict[statistic][1])
@@ -264,14 +269,20 @@ def plot_accuracy_figure(statistics, train_tags):
         
         fig.align_ylabels(axarr)
 
-    handles, labels = axarr[0].get_legend_handles_labels()
-    handles2, labels2 = axarr[2].get_legend_handles_labels()
-    handles.extend(handles2)
+    # Draw legends
+    handles_top, labels_top = axarr[0].get_legend_handles_labels()
+    handles_bot, labels_bot = axarr[2].get_legend_handles_labels()
     sample_var_patch = mpatches.Patch(color='lightblue', alpha=0.5, label='Sample variance')
     sample_var_sqrt_patch = mpatches.Patch(color='steelblue', alpha=0.7, label=r'Sample variance / $\sqrt{N_\mathrm{boxes}}$')
-    handles.append(sample_var_patch) 
-    handles.append(sample_var_sqrt_patch)
-    plt.legend(handles=handles, fontsize=18, loc=(1.3, 0.9))
+    handles_bot.append(sample_var_patch) 
+    handles_bot.append(sample_var_sqrt_patch)
+    legend_top = plt.legend(handles=handles_top, fontsize=18, loc=(1.3, 2.3), title='Top panel', title_fontsize=20)
+    ax = plt.gca().add_artist(legend_top)
+    legend_bot = plt.legend(handles=handles_bot, fontsize=18, loc=(1.3, 0.6), title='Bottom panel', title_fontsize=20)
+
+    legend_top._legend_box.align = "left"
+    legend_bot._legend_box.align = "left"
+
 
 
 def plot_contours(chaintags, legend_labels=[], params_toplot=None, colors=None,
@@ -444,7 +455,8 @@ def plot_cumulative_dist_figure(results_dict, params_toplot, stat_strs_toplot, i
         axarr[i,0].set_ylabel("fraction (cumulative)")
             
     handles, labels = axarr[0,0].get_legend_handles_labels()
-    plt.legend(handles, labels, loc=(1.1,0.8))
+    #plt.legend(handles, labels, loc=(1.1,0.8))
+    axarr[1,1].legend(handles, labels, loc='lower right')
 
 
 def plot_cumulative_dist(results_dict, ax, param_toplot, stat_strs_toplot, id_pairs, labels, colors,
@@ -468,6 +480,7 @@ def plot_cumulative_dist(results_dict, ax, param_toplot, stat_strs_toplot, id_pa
     ax.axvline(0.0, color='k')
     ax.axhline(0.5, color='k')
     ax.set_title(fr'${param_labels[param_toplot]}$')
+    ax.set_xlim(-2.5, 2.5)
     if divide_by_error:
         xx = np.linspace(*ax.get_xlim())
         ax.plot(xx, norm(0, 1).cdf(xx), color='k', ls='--', label=r'$\mathcal{N}(0,1)$')
@@ -620,8 +633,11 @@ def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplo
                                  comparison_dicts=None, xlabel=None, show_top_axis=True):
     subfig_width, subfig_height = (6,5)
     fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
-    plt.subplots_adjust(hspace=0.35, wspace=0.15)
-    
+    if show_top_axis:
+        plt.subplots_adjust(hspace=0.35, wspace=0.15)
+    else:
+        plt.subplots_adjust(hspace=0.25, wspace=0.15)
+
     count = 0
     for i in range(nrows):
         for j in range(ncols):
@@ -640,7 +656,7 @@ def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplo
             
     handles, labels = axarr[0,0].get_legend_handles_labels()
     #plt.legend(handles, labels, loc=(1.1,0.8)) # right side legend
-    plt.legend(handles, labels, loc='upper center', bbox_to_anchor=(-0.08,3.4))
+    plt.legend(handles, labels, loc='upper center', bbox_to_anchor=(-0.08,2.95), ncol=2)
 
 
 def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, stat_strs_toplot, id_pairs, labels, colors, 
