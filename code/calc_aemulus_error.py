@@ -41,6 +41,8 @@ def run(stat_str):
     err = np.diag(cov)
     np.savetxt(f"{res_dir}/error_aemulus_{stat_str}{errtag}.dat", err)
     print('Error:', err)
+    stdev = np.sqrt(err)
+    np.savetxt(f"{res_dir}/stdev_aemulus_{stat_str}{errtag}.dat", stdev)
 
     p16 = np.percentile(devmeans, 16, axis=0)
     p84 = np.percentile(devmeans, 84, axis=0)

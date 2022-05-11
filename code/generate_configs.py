@@ -6,8 +6,8 @@ from utils import rbins, rlin
 
 def main():
     #single()
-    #recovery_set()
-    scale_analysis_set()
+    recovery_set()
+    #scale_analysis_set()
 
 def single():
     #cosmo, hod = 3, 3
@@ -30,14 +30,14 @@ def single():
         f.write(contents)
 
 def recovery_set():
-    id_pairs = np.loadtxt('../tables/id_pairs_test.txt', delimiter=',', dtype=np.int)
-    #id_pairs = np.loadtxt('../tables/id_pairs_recovery_test_70.txt', delimiter=',', dtype=np.int)
+    #id_pairs = np.loadtxt('../tables/id_pairs_test.txt', delimiter=',', dtype=np.int)
+    id_pairs = np.loadtxt('../tables/id_pairs_recovery_test_70.txt', delimiter=',', dtype=np.int)
     #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
     #stat_strs = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str) 
     #stat_strs = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
     #stat_strs = np.concatenate((stat_strs, ['wp_xi_xi2_mcf']))
     #stat_strs = np.concatenate((stat_strs, ['wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']))
-    stat_strs = np.array(['wp'])
+    stat_strs = np.array(['wp80'])
     config_tag = '_minscale0'
     #config_tag = '_wpmaxscale6'
     #config_tag = '_largescales'

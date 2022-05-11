@@ -127,7 +127,7 @@ def run(chain_params_fn):
         model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
         scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
         scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
-        err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
+        err_fn = f"../covariances/stdev_aemulus_{statistic}_hod3_test0.dat"
 
         emu = Emu(statistic, scalings[i], model_fn, scaler_x_fn, scaler_y_fn, err_fn, 
                   bins=bins[i], predict_mode=True)

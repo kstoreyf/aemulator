@@ -33,6 +33,7 @@ class Emulator(object):
         self.model_fn = model_fn
         self.scaler_x_fn = scaler_x_fn
         self.scaler_y_fn = scaler_y_fn
+        # TODO: i think only need err_fn when in train mode; check when need other inputs
         self.err_fn = err_fn
         self.bins = bins
         self.n_bins = len(bins)

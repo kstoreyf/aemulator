@@ -6,7 +6,18 @@ import utils
 
 
 def main():
-    run_scale_dicts()
+    #run_scale_dicts()
+    run_single()
+
+
+def run_single():
+    results_dict_dir = '../data_products/results_dicts'
+    id_pairs = np.loadtxt('../tables/id_pairs_recovery_test_70.txt', delimiter=',', dtype=np.int)
+
+    fn_results_dict_wp80 = f'{results_dict_dir}/results_dict_wp_wp80.npy'
+    stat_strs = ['wp', 'wp80']
+    build_dict(stat_strs, id_pairs, '_minscale0', fn_results_dict_wp80)
+
 
 def run():
 
