@@ -5,7 +5,7 @@ import utils
 
 
 def main():
-    run('wp80')
+    run('mcf')
 
 def run(stat_str):
 

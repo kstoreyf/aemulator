@@ -6,8 +6,58 @@ from utils import rbins, rlin
 
 def main():
     #single()
-    recovery_set()
+    #recovery_set()
     #scale_analysis_set()
+    uchuu()
+
+
+def uchuu():
+
+    #statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
+    #statistics = ['wp', 'xi', 'xi2', 'upf']
+    #statistics = ['wp', 'xi', 'xi2']
+    #statistics = ['wp', 'xi']
+    statistics = ['wp80']
+    #statistics = ['mcf']
+    #statistics = ['wp80', 'xi', 'xi2', 'upf', 'mcf']
+    stat_str = '_'.join(statistics)
+
+    mock_name = 'uchuu'
+    mock_tag = '_'+mock_name
+    #config_tag = ''
+    config_tag = '_wpmaxscale6'
+
+    param_tag = '_all'
+    save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{mock_tag}{param_tag}{config_tag}.h5'
+
+    emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
+    scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
+
+    chain_results_fn = f'/home/users/ksf293/aemulator/chains/results/results_{stat_str}{mock_tag}{param_tag}{config_tag}.pkl'
+    n_threads = utils.get_nthreads(len(statistics))
+    dlogz_str = '1e-2'
+    # use aemulus covariance for uchuu
+    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_smoothgauss_emuperf_{stat_str}_hod3_test0.dat'
+    param_names_vary = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w', 'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
+    seed = np.random.randint(1000)
+
+    #bins = [list(range(0, 9))]*len(statistics)
+    bins = []
+    for i in range(len(statistics)):
+        if 'wp' in statistics[i]:
+            bins.append(list(range(0, 7)))
+        else:
+            bins.append(list(range(0, 9)))
+    
+    contents = populate_config_blank(save_fn, statistics, emu_names, scalings, 
+                        chain_results_fn, n_threads, dlogz_str, 
+                        cov_fn, param_names_vary, seed,
+                        mock_name, bins)
+    config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}{mock_tag}{config_tag}.cfg'
+    print(config_fn)
+    with open(config_fn, 'w') as f:
+        f.write(contents)
+
 
 def single():
     #cosmo, hod = 3, 3
@@ -155,6 +205,34 @@ chain:
 data:
     cosmo: {cosmo}
     hod: {hod}
+    bins: {bins}
+"""
+    return contents
+
+
+def populate_config_blank(save_fn, statistics, emu_names, scalings, 
+                          chain_results_fn, n_threads, dlogz_str, 
+                          cov_fn, param_names_vary, seed,
+                          mock_name, bins):
+    contents = \
+f"""---
+save_fn: '{save_fn}'
+
+emu:
+    statistics: {statistics}
+    emu_names: {emu_names}
+    scalings: {scalings}
+    
+chain:
+    chain_results_fn: '{chain_results_fn}'
+    n_threads: {n_threads}
+    dlogz: {dlogz_str}
+    cov_fn: '{cov_fn}'
+    param_names_vary: {param_names_vary}
+    seed: {seed}
+
+data:
+    data_name: {mock_name}
     bins: {bins}
 """
     return contents

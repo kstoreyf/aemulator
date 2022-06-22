@@ -20,6 +20,7 @@ def main(config_fn):
 #@profile
 def run(chain_params_fn):
     
+    mock_name = 'uchuu'
     f = h5py.File(chain_params_fn, 'r+')
 
     ### data params
@@ -68,7 +69,7 @@ def run(chain_params_fn):
     f.attrs['ys_observed'] = ys_observed
 
     # Get true values
-    cosmo_param_names, cosmo_params = utils.load_cosmo_params()
+    cosmo_param_names, cosmo_params = utils.load_cosmo_params_mock()
     hod_param_names, hod_params = utils.load_hod_params()
     all_param_names = np.concatenate((cosmo_param_names, hod_param_names))
     cosmo_truth = cosmo_params[cosmo]

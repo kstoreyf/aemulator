@@ -75,6 +75,22 @@ def get_emu(emu_name):
                 'PyTorch': emulator.EmulatorPyTorch}
     return emu_dict[emu_name]
 
+def load_cosmo_params_mock(mock_name):
+    cosmo_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w"]
+    if mock_name=='uchuu':
+        # from http://skiesanduniverses.org/Simulations/Uchuu/
+        # not sure about N_eff! pulled from Planck2015 table 5, rightmost col (https://arxiv.org/pdf/1502.01589.pdf)
+        # w??
+        cosmo_params = 0.3089, 0.0486, 0.8159, 0.6774, 0.9667, 3.04, -1
+    return cosmo_param_names, cosmo_params
+
+def load_hod_params_mock(mock_name):
+    hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
+    if mock_name=='uchuu':
+        # made using SHAM!
+        hod_params = [float("NaN")]*len(hod_param_names)
+    return hod_param_names, hod_params
+
 def load_cosmo_params():
     # 7 cosmo params
     cosmo_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w"]

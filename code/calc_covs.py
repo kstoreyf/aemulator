@@ -6,7 +6,7 @@ import calc_smoothgauss_cov
 
 def main():
     #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
-    stat_strs = ['wp80']
+    stat_strs = ['wp80_xi_xi2_upf_mcf']
     for stat_str in stat_strs:
         print(f'Calculating covariance matrices for {stat_str}')
         calc_aemulus_error.run(stat_str)

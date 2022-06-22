@@ -109,12 +109,12 @@ def data_config(f, cfg):
     #else: #compute the data ourselves
     #    data, cov = _compute_data(f, cfg)
 
-    required_data_keys = ['cosmo', 'hod']
+    required_data_keys = []
     for key in required_data_keys:
         assert key in cfg, "%s not in config but is required."%key
         f.attrs[key] = cfg[key]
     
-    optional_keys = ['bins']
+    optional_keys = ['cosmo', 'hod', 'bins', 'data_name']
 
     # for bins, need to create a dataset, not an attribute, to handle
     # diff length bin lists for diff statistics (annoying i know)
