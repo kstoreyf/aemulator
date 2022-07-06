@@ -13,19 +13,21 @@ def main():
 
 def uchuu():
 
-    #statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
+    statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
     #statistics = ['wp', 'xi', 'xi2', 'upf']
     #statistics = ['wp', 'xi', 'xi2']
-    #statistics = ['wp', 'xi']
-    statistics = ['wp80']
+    #statistics = ['wp', 'xi', 'xi2']
+    #statistics = ['wp']
+    #statistics = ['wp80']
     #statistics = ['mcf']
     #statistics = ['wp80', 'xi', 'xi2', 'upf', 'mcf']
     stat_str = '_'.join(statistics)
 
     mock_name = 'uchuu'
     mock_tag = '_'+mock_name
-    #config_tag = ''
-    config_tag = '_wpmaxscale6'
+    #config_tag = '_covglam4'
+    config_tag = '_covglam4_wpmaxscale6'
+    #config_tag = '_wpmaxscale6'
 
     param_tag = '_all'
     save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{mock_tag}{param_tag}{config_tag}.h5'
@@ -37,17 +39,21 @@ def uchuu():
     n_threads = utils.get_nthreads(len(statistics))
     dlogz_str = '1e-2'
     # use aemulus covariance for uchuu
-    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_smoothgauss_emuperf_{stat_str}_hod3_test0.dat'
+    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_smoothgauss_emuperf_{stat_str}_hod3_test0.dat'
+    # try w combined glam cov
+    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_uchuuglam4_{stat_str}.dat'
     param_names_vary = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w', 'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
     seed = np.random.randint(1000)
 
-    #bins = [list(range(0, 9))]*len(statistics)
-    bins = []
-    for i in range(len(statistics)):
-        if 'wp' in statistics[i]:
-            bins.append(list(range(0, 7)))
-        else:
-            bins.append(list(range(0, 9)))
+    if 'wpmaxscale6' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if 'wp' in statistics[i]:
+                bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    else:
+        bins = [list(range(0, 9))]*len(statistics)
     
     contents = populate_config_blank(save_fn, statistics, emu_names, scalings, 
                         chain_results_fn, n_threads, dlogz_str, 

@@ -1,6 +1,6 @@
 #!/bin/bash
 ##PBS -N chain_wp_c1h12_all_nthreads20
-#PBS -N chain_uchuu_wp80_xi_xi2_upf_mcf_wpmaxscale6
+#PBS -N chain_uchuu_wp_xi_xi2_upf_mcf_covglam4_wpmaxscale6
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=24
 #PBS -m ae
@@ -29,7 +29,8 @@ conda activate aem
 #python run_chain.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_c4h42_covemuperf.cfg
 #python run_chain.py ../chains/configs/chains_wp_xi_xi2_mcf_c3h38_maxscale1.cfg
 #python run_chain_statset_singles.py 1 12
-python run_chain_mock.py ../chains/configs/chains_wp80_xi_xi2_upf_mcf_uchuu_wpmaxscale6.cfg
+#python run_chain_mock.py ../chains/configs/chains_wp80_xi_xi2_upf_mcf_uchuu_wpmaxscale6.cfg
+python run_chain_mock.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_uchuu_covglam4_wpmaxscale6.cfg
 #mprof run -C python run_chain.py ../chains/configs/chains_wp_c1h12_covsg1_nthreads12.cfg
 #python -m memory_profiler run_chain.py ../chains/configs/chains_wp_xi_upf_mcf_c1h12_covsg1.cfg
 #mprof run -C python run_chain.py ../chains/configs/chains_wp_xi_upf_mcf_xi2_c1h12_covsg1.cfg
