@@ -3,8 +3,8 @@ import os
 
 cov_dir = '../covariances'
 
-#statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
-statistics = ['xi2']
+statistics = ['wp', 'upf', 'mcf']
+#statistics = ['mcf']
 stat_str = '_'.join(statistics)
 mode = 'glam_for_uchuu'
 #mode = 'glam_for_aemulus'

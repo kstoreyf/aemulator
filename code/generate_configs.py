@@ -13,7 +13,7 @@ def main():
 
 def uchuu():
 
-    statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
+    statistics = ['wp', 'upf', 'mcf']
     #statistics = ['wp', 'xi', 'xi2', 'upf']
     #statistics = ['wp', 'xi', 'xi2']
     #statistics = ['wp', 'xi', 'xi2']
@@ -25,8 +25,8 @@ def uchuu():
 
     mock_name = 'uchuu'
     mock_tag = '_'+mock_name
-    #config_tag = '_covglam4'
-    config_tag = '_covglam4_wpmaxscale6'
+    config_tag = '_covglam4'
+    #config_tag = '_covglam4_wpmaxscale6'
     #config_tag = '_wpmaxscale6'
 
     param_tag = '_all'

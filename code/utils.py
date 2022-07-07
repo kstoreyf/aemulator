@@ -139,10 +139,9 @@ def get_bounds():
 
 def make_label(statistics):
     if type(statistics) is str:
-        return stat_labels[statistics]
-    else:
-        stats_nice = [stat_labels[s] for s in statistics]
-        return ' + '.join(stats_nice)
+        statistics = statistics.split('_')
+    stats_nice = [stat_labels[s] for s in statistics]
+    return ' + '.join(stats_nice)
 
 def get_fiducial_emu_name(statistic):
     emu_name_dict = {'wp': 'George',
