@@ -6,14 +6,14 @@ import utils
 
 
 def main():
-    #run('wp')
-    run('wp_xi_xi2_upf_mcf')
+    mock_tag = '_aemulus_Msatmocks_test'
+    run(mock_tag, 'wp_xi_xi2_upf_mcf')
 
-def run(stat_str):
+def run(mock_tag, stat_str):
 
     statistics = stat_str.split('_')
 
-    cov_tag = 'emuperf'
+    cov_tag = 'emuperf'+mock_tag
     errtag = '_hod3_test0'
 
     cov_dir = '../covariances'    

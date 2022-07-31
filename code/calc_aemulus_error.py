@@ -5,9 +5,11 @@ import utils
 
 
 def main():
-    run('mcf')
+    mock_tag = '_aemulus_Msatmocks_test'
+    stat_str = 'mcf'
+    run(mock_tag, stat_str)
 
-def run(stat_str):
+def run(mock_tag, stat_str):
 
     statistics = stat_str.split('_')
     errtag = '_hod3_test0'
@@ -22,32 +24,32 @@ def run(stat_str):
     boxes = list(range(nboxes))
     tests = list(range(ntests)) 
 
-    res_dir = '../../aemulator/covariances'
+    res_dir = '../covariances'
 
     devmean_arr = []
     for i, statistic in enumerate(statistics):
-        testing_dir = f'../../clust/results_aemulus_test/results_{statistic}'
+        testing_dir = f'../../clust/results{mock_tag}/results_{statistic}'
         devmean_arr.append(calculate_devmeans(testing_dir, statistic, hod, cosmos, boxes, tests))
    
     #compute covariance assuming the mean is zero, as that is the expectation value (should be unbiased)
     devmeans = np.concatenate(devmean_arr, axis=1)
     cov = utils.covariance(devmeans, zeromean=True)
 
-    cov_fn = f"{res_dir}/cov_aemulus_{stat_str}{errtag}.dat"
+    cov_fn = f"{res_dir}/cov{mock_tag}_{stat_str}{errtag}.dat"
     print(f"Saving to {cov_fn}")
     np.savetxt(cov_fn, cov)
     # save error for gp input error, and percentiles 
     # note that this is slightly different than standard dev, because of zero mean covariance
-    err = np.diag(cov)
-    np.savetxt(f"{res_dir}/error_aemulus_{stat_str}{errtag}.dat", err)
-    print('Error:', err)
-    stdev = np.sqrt(err)
-    np.savetxt(f"{res_dir}/stdev_aemulus_{stat_str}{errtag}.dat", stdev)
+    var = np.diag(cov)
+    np.savetxt(f"{res_dir}/variance{mock_tag}_{stat_str}{errtag}.dat", var)
+    stdev = np.sqrt(var)
+    print('STDev:', stdev)
+    np.savetxt(f"{res_dir}/stdev{mock_tag}_{stat_str}{errtag}.dat", stdev)
 
     p16 = np.percentile(devmeans, 16, axis=0)
     p84 = np.percentile(devmeans, 84, axis=0)
-    np.savetxt(f"{res_dir}/p16_aemulus_{stat_str}{errtag}.dat", p16)
-    np.savetxt(f"{res_dir}/p84_aemulus_{stat_str}{errtag}.dat", p84)
+    np.savetxt(f"{res_dir}/p16{mock_tag}_{stat_str}{errtag}.dat", p16)
+    np.savetxt(f"{res_dir}/p84{mock_tag}_{stat_str}{errtag}.dat", p84)
    
 
 

@@ -4,9 +4,11 @@ import utils
 
 
 def main():
-    run('xi_xi2')
+    mock_tag = '_aemulus_Msatmocks_test'
+    train_tag_extra = '_errstdev_Msatmocks'
+    run(mock_tag, 'xi_xi2', train_tag_extra)
 
-def run(stat_str):
+def run( mock_tag, stat_str, train_tag_extra=''):
 
     statistics = stat_str.split('_')
 
@@ -17,33 +19,34 @@ def run(stat_str):
 
     emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
     scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
+    train_tags_extra = [train_tag_extra]*len(statistics)
 
     acctags = []
     fracerr_arrs = []
     for i, statistic in enumerate(statistics):
-        train_tag = f'_{emu_names[i]}_{scalings[i]}'
+        train_tag = f'_{emu_names[i]}_{scalings[i]}{train_tags_extra[i]}'
         print("Computing emu error for", statistic, train_tag)
-        fracerrs = load_fracerrs_aemulus(statistic, train_tag)
+        fracerrs = load_fracerrs_aemulus(statistic, mock_tag, train_tag)
         fracerr_arrs.append(fracerrs)
 
     fracerrs = np.concatenate(fracerr_arrs, axis=1)
     cov_perf = utils.covariance(fracerrs, zeromean=True)
 
-    save_fn_perf = f"{cov_dir}/cov_emuperf_{stat_str}{errtag}.dat"
+    save_fn_perf = f"{cov_dir}/cov_emuperf{mock_tag}_{stat_str}{errtag}.dat"
     print('Saving cov_perf to', save_fn_perf)
     np.savetxt(save_fn_perf, cov_perf)
     
     p16 = np.percentile(fracerrs, 16, axis=0)
     p84 = np.percentile(fracerrs, 84, axis=0)
-    save_fn_p16_perf = f"{cov_dir}/p16_emuperf_{stat_str}{errtag}.dat"
-    save_fn_p84_perf = f"{cov_dir}/p84_emuperf_{stat_str}{errtag}.dat"
+    save_fn_p16_perf = f"{cov_dir}/p16_emuperf{mock_tag}_{stat_str}{errtag}.dat"
+    save_fn_p84_perf = f"{cov_dir}/p84_emuperf{mock_tag}_{stat_str}{errtag}.dat"
     np.savetxt(save_fn_p16_perf, p16)
     np.savetxt(save_fn_p84_perf, p84)
 
 
-def load_fracerrs_aemulus(statistic, train_tag):
+def load_fracerrs_aemulus(statistic, mock_tag, train_tag):
 
-    testing_dir = f'../../clust/results_aemulus_test_mean/results_{statistic}'    
+    testing_dir = f'../../clust/results{mock_tag}_mean/results_{statistic}'    
     predictions_dir = f'../predictions/predictions_{statistic}{train_tag}'
 
     ptests = []

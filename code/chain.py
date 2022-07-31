@@ -75,13 +75,13 @@ def get_cov_means_for_hypercube_prior(idxs_cosmo_vary):
     return hypercube_prior_cov_sqrt, hypercube_prior_means
 
 #@profile
-def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results_fn, fixed_params={},
+def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results_fn, mock_name_hod, fixed_params={},
              n_threads=1, dlogz=0.01, seed=None):
 
     print("Dynesty sampling (static) - nongen")
     global _emus, _hod_bounds, _hypercube_prior_cov_sqrt, _hypercube_prior_means
     _emus = emus
-    _hod_bounds = utils.get_hod_bounds()
+    _hod_bounds = utils.get_hod_bounds(mock_name_hod)
     num_params = len(param_names)
 
     # Get indices of cosmological parameters that will vary; non-listed params are fixed

@@ -5,7 +5,7 @@ import glob
 def main():
     #calc_cov(['wp', 'xi', 'upf', 'mcf'], 'glam4', 986)
 
-    statistics = ['wp', 'upf', 'mcf']
+    statistics = ['wp', 'xi2']
     #statistics = ['upf']
     mock_name = 'glam4'
     mock_tag = '_'+mock_name

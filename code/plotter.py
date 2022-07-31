@@ -285,11 +285,11 @@ def plot_accuracy_figure(statistics, train_tags):
 
 
 
-def plot_contours(chaintags, legend_labels=[], params_toplot=None, colors=None,
+def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_labels=[], params_toplot=None, colors=None,
                   legend_loc='upper center', legend_fontsize=20,
                   vertical_markers=None, vertical_marker_color='grey', alpha=0.4):
     # Make dict of bounds for plot ranges
-    bounds = utils.get_bounds()
+    bounds = utils.get_bounds(mock_name_hod)
     sample_arr = []
     for i, chaintag in enumerate(chaintags):
 

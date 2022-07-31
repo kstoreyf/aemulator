@@ -97,26 +97,33 @@ def load_cosmo_params():
     cosmo_params = np.loadtxt('../tables/cosmology_camb_test_box_full.dat')
     return cosmo_param_names, cosmo_params
 
-def load_hod_params():
+def load_hod_params(mock_name):
     # 11 cosmo params
     hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
-    hod_params = np.loadtxt('../tables/HOD_test_np11_n1000_new_f_env.dat')
+    if mock_name=='aemulus_test':
+        hod_fn = '../tables/HOD_test_np11_n1000_new_f_env.dat'
+    elif mock_name=='aemulus_Msatmocks_test':
+        hod_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/test_mocks/HOD_test_np11_n5000_new_f_env_Msat.dat'
+    elif mock_name=='aemulus_Msatmocks_train':
+        hod_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/training_mocks/HOD_design_np11_n5000_new_f_env_Msat.dat'
+    hod_params = np.loadtxt(hod_fn)
     hod_params[:, 0] = np.log10(hod_params[:, 0])
     hod_params[:, 2] = np.log10(hod_params[:, 2])
     return hod_param_names, hod_params
 
 # Prior is the min and max of training set parameters, +/- 10% on either side
-def get_hod_bounds():
+def get_hod_bounds(mock_name):
     hod_bounds = {}
-    hod_param_names, hod_params = load_hod_params()
+    hod_param_names, hod_params = load_hod_params(mock_name)
     for pname in hod_param_names:
         pidx = hod_param_names.index(pname)
         vals = hod_params[:,pidx]
         pmin = np.min(vals)
         pmax = np.max(vals)
         # Add a 10% buffer on either side of training set
-        buf = (pmax-pmin)*0.1
-        hod_bounds[pname] = [pmin-buf, pmax+buf]
+        #buf = (pmax-pmin)*0.1
+        #hod_bounds[pname] = [pmin-buf, pmax+buf]
+        hod_bounds[pname] = [pmin, pmax]
     return hod_bounds
 
 def get_cosmo_bounds():
@@ -132,8 +139,8 @@ def get_cosmo_bounds():
         cosmo_bounds[pname] = [pmin-buf, pmax+buf]
     return cosmo_bounds
 
-def get_bounds():
-    bounds = get_hod_bounds()
+def get_bounds(mock_name):
+    bounds = get_hod_bounds(mock_name)
     bounds.update(get_cosmo_bounds())
     return bounds
 
