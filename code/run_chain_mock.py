@@ -37,14 +37,11 @@ def run(chain_params_fn):
     statistics = f.attrs['statistics']
     emu_names = f.attrs['emu_names']
     scalings = f.attrs['scalings']
+    # optional
     train_tags_extra = f.attrs['train_tags_extra']
-
-    
-    # TODO: make this a value in chain config or something??
-    mock_names_train = np.array(['aemulus_Msatmocks_train' if 'Msatmocks' in tte else 'aemulus_train' for tte in train_tags_extra])
-    # Otherwise might be sampling different HOD spaces which is weird for chain
-    assert np.all(mock_names_train == mock_names_train[0]), 'All mock names for emu training should be same!'
-    mock_name_train = mock_names_train[0]
+    mock_name_train = f.attrs['mock_name_train']
+    mock_name_test = f.attrs['mock_name_test']
+    # TODO: do something if these are null, or require them
 
     ### chain params
     # required
@@ -136,7 +133,9 @@ def run(chain_params_fn):
         model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
         scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
         scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
-        err_fn = f"../covariances/stdev_aemulus_{statistic}_hod3_test0.dat"
+        # this was wrong for Msatmocks!
+        #err_fn = f"../covariances/stdev_aemulus_{statistic}_hod3_test0.dat"
+        err_fn = f"../covariances/stdev_{mock_name_test}_{statistic}_hod3_test0.dat"
 
         emu = Emu(statistic, scalings[i], model_fn, scaler_x_fn, scaler_y_fn, err_fn, 
                   bins=bins[i], predict_mode=True, mock_tag_train=mock_tag_train)
@@ -147,7 +146,8 @@ def run(chain_params_fn):
     f.close()
 
     start = time.time()
-    res = chain.run_mcmc(emus, param_names_vary, ys_observed, cov, chain_params_fn, chain_results_fn, mock_name_train, fixed_params=fixed_params,
+    res = chain.run_mcmc(emus, param_names_vary, ys_observed, cov, chain_params_fn, chain_results_fn,       
+                         mock_name_train, fixed_params=fixed_params,
                          n_threads=n_threads, dlogz=dlogz, seed=seed)
     end = time.time()
     print(f"Time: {(end-start)/60.0} min ({(end-start)/3600.} hrs) [{(end-start)/(3600.*24.)} days]")

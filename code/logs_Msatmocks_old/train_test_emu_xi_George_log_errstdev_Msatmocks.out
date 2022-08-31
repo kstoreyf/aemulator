@@ -1,0 +1,77 @@
+/home/users/ksf293/aemulator/code
+starting
+Job is running on node c0.ib.local
+c0.ib.local
+c0.ib.local
+c0.ib.local
+c0.ib.local
+c0.ib.local
+c0.ib.local
+c0.ib.local
+c0.ib.local
+/home/users/ksf293/miniconda3/envs/aem/lib/python3.9/site-packages/sklearn/preprocessing/_function_transformer.py:171: RuntimeWarning: invalid value encountered in log10
+  return func(X, **(kw_args if kw_args else {}))
+Model name: ../models/model_xi_George_log_errstdev_Msatmocks
+Error filename: ../covariances/stdev_aemulus_Msatmocks_test_xi_hod3_test0.dat
+Constructing emu
+original number of training ID pairs: 4000
+Deleted bad ID pairs: [(12, 1296), (13, 1335)]
+N train: 3998
+Training
+george version: 0.4.0
+Training bin
+[0.9384293  1.16884295 0.860847   ... 0.9516152  0.94508508 0.90802931]
+Optimizing
+Training bin
+[-0.46616632 -0.30254075 -0.43490069 ... -0.45181924 -0.44019281
+ -0.47439383]
+Optimizing
+Training bin
+[1.28147062 1.57210906 1.03094281 ... 1.24941997 1.25276398 1.04673273]
+Optimizing
+Training bin
+[0.56933481 0.79477585 0.57977983 ... 0.61673622 0.59957361 0.60563124]
+Optimizing
+Training bin
+[1.72736466 2.08618608 1.29945086 ... 1.6551785  1.65668272 1.02389047]
+Optimizing
+Training bin
+[2.1522079  2.49337843 1.63073828 ... 2.03605531 1.99628339 0.95981589]
+Optimizing
+Training bin
+[0.10470591 0.31560555 0.14278822 ... 0.1407936  0.14383637 0.11925127]
+Optimizing
+Training bin
+[-1.1865927  -1.03050292 -1.14516426 ... -1.18974718 -1.17390718
+ -1.19818798]
+Optimizing
+Train time: 22121.79604077339 s = 368.6966006795565 min
+Testing
+[2.42794742 2.78263098 1.91603598 ... 2.33411765 2.25078046 1.32845137]
+[[ 0.327876    0.0581827   0.694428   ...  0.1879146   0.8667378
+   0.734356  ]
+ [ 0.327876    0.0581827   0.694428   ...  0.102011    0.813689
+   0.1302183 ]
+ [ 0.327876    0.0581827   0.694428   ...  0.07130961  0.9883789
+   0.5493195 ]
+ ...
+ [ 0.321332    0.0511167   0.798135   ... -0.2718429   0.5185541
+   0.5844984 ]
+ [ 0.321332    0.0511167   0.798135   ...  0.2840126   1.484586
+   0.9169872 ]
+ [ 0.321332    0.0511167   0.798135   ... -0.03947958  1.665272
+   0.8343368 ]]
+Traceback (most recent call last):
+  File "/home/users/ksf293/aemulator/code/run_emulator.py", line 49, in <module>
+    emu.test()
+  File "/home/users/ksf293/aemulator/code/emulator.py", line 592, in test
+    print(self.x_test_scaled)
+  File "/home/users/ksf293/miniconda3/envs/aem/lib/python3.9/site-packages/george/gp.py", line 525, in predict
+    alpha = self._compute_alpha(y, cache)
+  File "/home/users/ksf293/miniconda3/envs/aem/lib/python3.9/site-packages/george/gp.py", line 271, in _compute_alpha
+    self._check_dimensions(y) - self._call_mean(self._x),
+  File "/home/users/ksf293/miniconda3/envs/aem/lib/python3.9/site-packages/george/gp.py", line 155, in _call_mean
+    raise ValueError(
+ValueError: mean function returned NaN or Inf for parameters:
+OrderedDict([('value', nan)])
+done

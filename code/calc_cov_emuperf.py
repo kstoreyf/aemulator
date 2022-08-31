@@ -6,7 +6,7 @@ import utils
 def main():
     mock_tag = '_aemulus_Msatmocks_test'
     train_tag_extra = '_errstdev_Msatmocks'
-    run(mock_tag, 'xi_xi2', train_tag_extra)
+    run(mock_tag, 'xi2', train_tag_extra)
 
 def run( mock_tag, stat_str, train_tag_extra=''):
 
@@ -31,17 +31,20 @@ def run( mock_tag, stat_str, train_tag_extra=''):
 
     fracerrs = np.concatenate(fracerr_arrs, axis=1)
     cov_perf = utils.covariance(fracerrs, zeromean=True)
-
+    print(np.std(fracerrs, axis=0))
+    print(cov_perf)
     save_fn_perf = f"{cov_dir}/cov_emuperf{mock_tag}_{stat_str}{errtag}.dat"
     print('Saving cov_perf to', save_fn_perf)
     np.savetxt(save_fn_perf, cov_perf)
     
     p16 = np.percentile(fracerrs, 16, axis=0)
     p84 = np.percentile(fracerrs, 84, axis=0)
+    print(p16)
+    print(p84)
     save_fn_p16_perf = f"{cov_dir}/p16_emuperf{mock_tag}_{stat_str}{errtag}.dat"
     save_fn_p84_perf = f"{cov_dir}/p84_emuperf{mock_tag}_{stat_str}{errtag}.dat"
-    np.savetxt(save_fn_p16_perf, p16)
-    np.savetxt(save_fn_p84_perf, p84)
+    #np.savetxt(save_fn_p16_perf, p16)
+    #np.savetxt(save_fn_p84_perf, p84)
 
 
 def load_fracerrs_aemulus(statistic, mock_tag, train_tag):
@@ -62,7 +65,7 @@ def load_fracerrs_aemulus(statistic, mock_tag, train_tag):
                                 delimiter=',', unpack=True)
         npredict, ppredict = np.loadtxt(f'{predictions_dir}/{statistic}_{id_tag}.dat', 
                                 delimiter=',', unpack=True)
-
+        
         ptests.append(ptest)
         ppredicts.append(ppredict)
     

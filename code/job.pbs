@@ -1,6 +1,6 @@
 #!/bin/bash
 ##PBS -N train_test_emu_wp80_George_log_errstdev
-#PBS -N train_test_emu_mcf_George_errstdev_Msatmocks
+#PBS -N train_test_emu_xi2_George_xrsqmean_errstdev_Msatmocks_kM32ExpConst2
 ##PBS -N build_result_dicts
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=9

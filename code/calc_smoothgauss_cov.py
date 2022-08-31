@@ -24,14 +24,19 @@ def run(mock_tag, stat_str):
     cov = np.loadtxt(cov_fn)
 
     print(f"Smoothing {cov_fn}...")
-    corr = utils.reduced_covariance(cov)
-    corr_convolved = smooth_corr_gaussian(corr, statistics, width=1)
+    cov_smooth = smooth_cov_gaussian(cov, statistics)
+    np.savetxt(cov_smooth_fn, cov_smooth)
+    print(f"Successfully saved to {cov_smooth_fn}!")
+
+
+def smooth_cov_gaussian(cov_orig, statistics, nbins=9, width=1):
+    corr_orig = utils.reduced_covariance(cov_orig)
+    corr_convolved = smooth_corr_gaussian(corr_orig, statistics, nbins=nbins, width=width)
 
     # normalize corr
     corr_convolved_norm = utils.reduced_covariance(corr_convolved)
-    cov_smooth = utils.correlation_to_covariance(corr_convolved_norm, cov)
-    np.savetxt(cov_smooth_fn, cov_smooth)
-    print(f"Successfully saved to {cov_smooth_fn}!")
+    cov_smooth = utils.correlation_to_covariance(corr_convolved_norm, cov_orig)
+    return cov_smooth
 
 
 def smooth_corr_gaussian(corr_orig, statistics, nbins=9, width=1):

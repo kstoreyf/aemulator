@@ -12,7 +12,7 @@ import utils
 
 def main(config_fn):
     
-    chain_params_fn = initialize_chain.main(config_fn, overwrite_param_file=False)
+    chain_params_fn = initialize_chain.main(config_fn, overwrite_param_file=True)
     if chain_params_fn==-1:
         return # means exists already
     run(chain_params_fn)
@@ -20,11 +20,11 @@ def main(config_fn):
 #@profile
 def run(chain_params_fn):
     
-    mock_name = 'uchuu'
     f = h5py.File(chain_params_fn, 'r+')
 
     ### data params
     # required
+    data_name = f.attrs['data_name']
     cosmo = f.attrs['cosmo']
     hod = f.attrs['hod']
     # optional
@@ -39,6 +39,11 @@ def run(chain_params_fn):
     statistics = f.attrs['statistics']
     emu_names = f.attrs['emu_names']
     scalings = f.attrs['scalings']
+    # optional
+    train_tags_extra = f.attrs['train_tags_extra']
+    mock_name_train = f.attrs['mock_name_train']
+    mock_name_test = f.attrs['mock_name_test']
+    # TODO: do something if these are null, or require them
 
     ### chain params
     # required
@@ -55,12 +60,14 @@ def run(chain_params_fn):
     if isinstance(bins, float) and np.isnan(bins):
         bins = np.array([list(range(0,n_bins_tot))]*n_stats)
 
+    data_tag = '_'+data_name
+
     # Set actual calculated observable
     ys_observed = []
     for i, statistic in enumerate(statistics):
-        testing_dir = f'../../clust/results_aemulus_test_mean/results_{statistic}'
-        _, y_obs = np.loadtxt(f'{testing_dir}/{statistic}_cosmo_{cosmo}_HOD_{hod}_mean.dat', 
-                                delimiter=',', unpack=True)
+        result_dir=f"/home/users/ksf293/clust/results{data_tag}_mean/results_{statistic}"
+        fn_stat=f"{result_dir}/{statistic}_cosmo_{cosmo}_HOD_{hod}_mean.dat"
+        _, y_obs = np.loadtxt(fn_stat, delimiter=',', unpack=True)
 
         # if restricting to certain scales, use only those data vector bins
         bins_for_stat = bins[i]
@@ -69,8 +76,8 @@ def run(chain_params_fn):
     f.attrs['ys_observed'] = ys_observed
 
     # Get true values
-    cosmo_param_names, cosmo_params = utils.load_cosmo_params_mock()
-    hod_param_names, hod_params = utils.load_hod_params()
+    cosmo_param_names, cosmo_params = utils.load_cosmo_params(data_name)
+    hod_param_names, hod_params = utils.load_hod_params(data_name)
     all_param_names = np.concatenate((cosmo_param_names, hod_param_names))
     cosmo_truth = cosmo_params[cosmo]
     hod_truth = hod_params[hod]
@@ -121,17 +128,19 @@ def run(chain_params_fn):
 
     print("Building emulators")
     emus = [None]*n_stats
+    mock_tag_train = '_'+mock_name_train
     for i, statistic in enumerate(statistics):
         Emu = utils.get_emu(emu_names[i])
         
-        train_tag = f'_{emu_names[i]}_{scalings[i]}'
+        train_tag = f'_{emu_names[i]}_{scalings[i]}{train_tags_extra[i]}'
         model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
         scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
         scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
-        err_fn = f"../covariances/stdev_aemulus_{statistic}_hod3_test0.dat"
+        #err_fn = f"../covariances/stdev_aemulus_{statistic}_hod3_test0.dat"
+        err_fn = f"../covariances/stdev_{mock_name_test}_{statistic}_hod3_test0.dat"
 
         emu = Emu(statistic, scalings[i], model_fn, scaler_x_fn, scaler_y_fn, err_fn, 
-                  bins=bins[i], predict_mode=True)
+                  bins=bins[i], predict_mode=True, mock_tag_train=mock_tag_train)
         emu.load_model()
         emus[i] = emu
         print(f"Emulator for {statistic} built with train_tag {train_tag}")
@@ -139,7 +148,8 @@ def run(chain_params_fn):
     f.close()
 
     start = time.time()
-    res = chain.run_mcmc(emus, param_names_vary, ys_observed, cov, chain_params_fn, chain_results_fn, fixed_params=fixed_params,
+    res = chain.run_mcmc(emus, param_names_vary, ys_observed, cov, chain_params_fn, chain_results_fn,        
+                         mock_name_train, fixed_params=fixed_params, 
                          n_threads=n_threads, dlogz=dlogz, seed=seed)
     end = time.time()
     print(f"Time: {(end-start)/60.0} min ({(end-start)/3600.} hrs) [{(end-start)/(3600.*24.)} days]")

@@ -79,7 +79,7 @@ def emu_config(f, cfg):
         f.attrs[key] = cfg[key]
 
     #optional_keys = ['fixed_params', 'emu_hps', 'seed']
-    optional_keys = ['train_tags_extra', 'nhods', 'err_fn']
+    optional_keys = ['train_tags_extra', 'nhods', 'err_fn', 'mock_name_train', 'mock_name_test']
     #default_vals = [{}, {}, {}, None] #gonna None all these if empty
     # want to clafiy nothing specified
 

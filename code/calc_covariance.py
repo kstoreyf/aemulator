@@ -3,17 +3,18 @@ import glob
 
 
 def main():
-    #calc_cov(['wp', 'xi', 'upf', 'mcf'], 'glam4', 986)
 
-    statistics = ['wp', 'xi2']
-    #statistics = ['upf']
-    mock_name = 'glam4'
+    #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
+    stat_strs = ['wp_xi_mcf']
+    mock_name = 'glam'
     mock_tag = '_'+mock_name
     N_mocks = 986
-    calc_cov(statistics, mock_tag, N_mocks)
+    for stat_str in stat_strs:
+        calc_cov(stat_str, mock_tag, N_mocks)
 
-def calc_cov(statistics, mock_tag, n_mocks):
 
+def calc_cov(stat_str, mock_tag, n_mocks):
+    statistics = stat_str.split('_')
     n_mock_min, n_mock_max = 0, n_mocks
     if mock_tag=='minerva':
         n_mock_min += 1
@@ -31,7 +32,6 @@ def calc_cov(statistics, mock_tag, n_mocks):
 
     cov = covariance(arrs, fractional=True)
     
-    stat_str = '_'.join(statistics)
     cov_fn = f'../covariances/cov{mock_tag}_{stat_str}.dat'
     np.savetxt(cov_fn, cov)
     print("Saved to", cov_fn)

@@ -5,47 +5,64 @@ import utils
 from utils import rbins, rlin
 
 def main():
+    #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
+    #stat_strs = ['wp_xi', 'wp_xi_upf', 'wp_xi_mcf']
+    #stat_strs = ['wp', 'wp_xi_upf', 'wp_xi_mcf']
+    stat_strs = ['wp_xi_upf', 'wp_xi_mcf']
+    #stat_strs = ['wp', 'wp_xi', 'wp_xi_upf_mcf']
     #single()
     #recovery_set()
     #scale_analysis_set()
-    uchuu()
+    for stat_str in stat_strs:
+      uchuu(stat_str)
+
+    # id_pairs = [(3,3)]
+    # for stat_str in stat_strs:  
+    #     for id_pair in id_pairs:    
+    #         cosmo, hod = id_pair
+    #         aemulus(stat_str, cosmo, hod)
 
 
-def uchuu():
+def uchuu(stat_str):
 
-    #statistics = ['wp', 'upf', 'mcf']
-    #statistics = ['wp', 'xi', 'xi2', 'upf']
-    #statistics = ['wp', 'xi', 'xi2']
-    #statistics = ['wp', 'xi', 'xi2']
-    #statistics = ['wp', 'xi2', 'upf']
-    #statistics = ['wp80']
-    statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
-    #statistics = ['wp80', 'xi', 'xi2', 'upf', 'mcf']
-    stat_str = '_'.join(statistics)
+    statistics = stat_str.split('_')
 
-    mock_name = 'uchuu'
-    mock_tag = '_'+mock_name
+    data_name = 'uchuu'
+    data_tag = '_'+data_name
 
-    mock_tag_cov = '_aemulus_Msatmocks_test'
-    config_tag = '_Msatmocks_covglam4'
-    #config_tag = '_covglam4_wpmaxscale6'
-    #config_tag = '_wpmaxscale6'
+    mock_name_train = 'aemulus_Msatmocks_train'
+    mock_name_test = 'aemulus_Msatmocks_test'
+    #config_tag = '_Msatmocks_covglam4'
+    #config_tag = '_Msatmocks_covglam4_allmaxscale6'
+    #config_tag = '_Msatmocks_covaemsmooth'
+    #config_tag = '_Msatmocks_covglamsmooth_ellcosmoprior'
+    config_tag = '_Msatmocks_covglamsmooth_boundsingle'
+    #config_tag = '_Msatmocks_wpmaxscale6'
 
     param_tag = '_all'
-    save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{mock_tag}{param_tag}{config_tag}.h5'
+    #param_tag = '_hodparams'
+    save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{data_tag}{param_tag}{config_tag}.h5'
 
     emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
     scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
     train_tags_extra = ['_errstdev_Msatmocks']*len(statistics)
 
-    chain_results_fn = f'/home/users/ksf293/aemulator/chains/results/results_{stat_str}{mock_tag}{param_tag}{config_tag}.pkl'
+    chain_results_fn = f'/home/users/ksf293/aemulator/chains/results/results_{stat_str}{data_tag}{param_tag}{config_tag}.pkl'
     n_threads = utils.get_nthreads(len(statistics))
     dlogz_str = '1e-2'
     # use aemulus covariance for uchuu
-    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_smoothgauss_emuperf_{stat_str}_hod3_test0.dat'
-    # try w combined glam cov
-    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined{mock_tag_cov}_uchuuglam4_{stat_str}.dat'
+    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_smoothgauss_emuperf_{mock_name_test}_{stat_str}_hod3_test0.dat'
+    # try w combined glam4 cov
+    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuuglam4_{stat_str}.dat'
+    # combined glam cov
+    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuuglam_{stat_str}.dat'
+    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuuglam_smooth_{stat_str}.dat'
+    # aemulus for uchuu cov
+    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuu_{stat_str}.dat'
+    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuu_smooth_{stat_str}.dat'
+
     param_names_vary = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w', 'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
+    #param_names_vary = ['M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
     seed = np.random.randint(1000)
 
     if 'wpmaxscale6' in config_tag:
@@ -55,14 +72,74 @@ def uchuu():
                 bins.append(list(range(0, 7)))
             else:
                 bins.append(list(range(0, 9)))
+    elif 'allmaxscale6' in config_tag:
+        bins = [list(range(0, 7))]*len(statistics)
     else:
         bins = [list(range(0, 9))]*len(statistics)
     
     contents = populate_config_blank(save_fn, statistics, emu_names, scalings, train_tags_extra,
+                        mock_name_train, mock_name_test,
                         chain_results_fn, n_threads, dlogz_str, 
                         cov_fn, param_names_vary, seed,
-                        mock_name, bins)
-    config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}{mock_tag}{config_tag}.cfg'
+                        data_name, bins)
+    if param_tag=='_all':
+        config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}{data_tag}{config_tag}.cfg'
+    else:
+        config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}{data_tag}{param_tag}{config_tag}.cfg'
+    print(config_fn)
+    with open(config_fn, 'w') as f:
+        f.write(contents)
+
+
+def aemulus(stat_str, cosmo, hod):
+
+    statistics = stat_str.split('_')
+
+    data_name = 'aemulus_Msatmocks_test'
+    data_tag = '_'+data_name
+
+    # mock names used for building emus
+    mock_name_train = 'aemulus_Msatmocks_train'
+    mock_name_test = 'aemulus_Msatmocks_test'
+    config_tag = ''
+
+    param_tag = '_all'
+    save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{data_tag}_c{cosmo}h{hod}{param_tag}{config_tag}.h5'
+
+    emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
+    scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
+    train_tags_extra = ['_errstdev_Msatmocks']*len(statistics)
+
+    chain_results_fn = f'/home/users/ksf293/aemulator/chains/results/results_{stat_str}{data_tag}_c{cosmo}h{hod}{param_tag}{config_tag}.pkl'
+    n_threads = utils.get_nthreads(len(statistics))
+    dlogz_str = '1e-2'
+    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_smoothgauss_emuperf_{mock_name_test}_{stat_str}_hod3_test0.dat'
+
+    param_names_vary = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w', 'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
+    #param_names_vary = ['M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
+    seed = np.random.randint(1000)
+
+    if 'wpmaxscale6' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if 'wp' in statistics[i]:
+                bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    elif 'allmaxscale6' in config_tag:
+        bins = [list(range(0, 7))]*len(statistics)
+    else:
+        bins = [list(range(0, 9))]*len(statistics)
+    
+    contents = populate_config_blank(save_fn, statistics, emu_names, scalings, train_tags_extra,
+                        mock_name_train, mock_name_test,
+                        chain_results_fn, n_threads, dlogz_str, 
+                        cov_fn, param_names_vary, seed,
+                        data_name, bins, cosmo=cosmo, hod=hod)
+    if param_tag=='_all':
+        config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}{data_tag}_c{cosmo}h{hod}{config_tag}.cfg'
+    else:
+        config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}{data_tag}_c{cosmo}h{hod}{param_tag}{config_tag}.cfg'
     print(config_fn)
     with open(config_fn, 'w') as f:
         f.write(contents)
@@ -87,6 +164,7 @@ def single():
     print(config_fn)
     with open(config_fn, 'w') as f:
         f.write(contents)
+
 
 def recovery_set():
     #id_pairs = np.loadtxt('../tables/id_pairs_test.txt', delimiter=',', dtype=np.int)
@@ -220,9 +298,10 @@ data:
 
 
 def populate_config_blank(save_fn, statistics, emu_names, scalings, train_tags_extra,
+                          mock_name_train, mock_name_test,
                           chain_results_fn, n_threads, dlogz_str, 
                           cov_fn, param_names_vary, seed,
-                          mock_name, bins):
+                          data_name, bins, cosmo=None, hod=None):
     contents = \
 f"""---
 save_fn: '{save_fn}'
@@ -232,6 +311,8 @@ emu:
     emu_names: {emu_names}
     scalings: {scalings}
     train_tags_extra: {train_tags_extra}
+    mock_name_train: '{mock_name_train}'
+    mock_name_test: '{mock_name_test}'
     
 chain:
     chain_results_fn: '{chain_results_fn}'
@@ -242,7 +323,9 @@ chain:
     seed: {seed}
 
 data:
-    data_name: {mock_name}
+    data_name: {data_name}
+    cosmo: {cosmo}
+    hod: {hod}
     bins: {bins}
 """
     return contents

@@ -188,8 +188,16 @@ class Emulator(object):
     def times_rsq(self, x):
         return x * self.r_vals**2
 
-    def div_rsq(self, x):
-        return x / self.r_vals**2
+    def div_rsq(self, x_rsq):
+        return x_rsq / self.r_vals**2
+
+    def times_rsq_const(self, x):
+        x_xrsq =  x * self.r_vals**2
+        return (x_xrsq + 300)/300
+
+    def div_rsq_const(self, x_rsq):
+        x = x_rsq / self.r_vals**2
+        return x*300 - 300
 
     def times_rsq_mean(self, x):
         x_xrsq = x * self.r_vals**2
@@ -198,6 +206,28 @@ class Emulator(object):
 
     def div_rsq_mean(self, x_xrsq_mean):
         x_xrsq = x_xrsq_mean * self.y_train_xrsq_std + self.y_train_xrsq_mean
+        x = x_xrsq / self.r_vals**2
+        return x
+
+    def times_rsq_mean_const(self, x):
+        x_xrsq = x * self.r_vals**2
+        x_xrsq_mean = (x_xrsq - self.y_train_xrsq_mean)/self.y_train_xrsq_std
+        x_xrsq_mean_const = x_xrsq_mean + 4 #magic, to ensure no negatives
+        return x_xrsq_mean_const
+
+    def div_rsq_mean_const(self, x_xrsq_mean_const):
+        x_xrsq_mean = x_xrsq_mean_const - 4 #magic
+        x_xrsq = x_xrsq_mean * self.y_train_xrsq_std + self.y_train_xrsq_mean
+        x = x_xrsq / self.r_vals**2
+        return x
+
+    def times_rsq_minmax(self, x):
+        x_xrsq = x * self.r_vals**2
+        x_xrsq_minmax = (x_xrsq - self.y_train_xrsq_min)/(self.y_train_xrsq_max - self.y_train_xrsq_min)
+        return x_xrsq_minmax
+
+    def div_rsq_minmax(self, x_xrsq_minmax):
+        x_xrsq = x_xrsq_minmax*(self.y_train_xrsq_max - self.y_train_xrsq_min) + self.y_train_xrsq_min
         x = x_xrsq / self.r_vals**2
         return x
 
@@ -218,14 +248,31 @@ class Emulator(object):
             self.scaler_y = FunctionTransformer(func=self.times_rsq, inverse_func=self.div_rsq) 
             self.scaler_y.fit(self.y_train)  
 
+        elif scaling=='xrsqconst':
+            self.scaler_y = FunctionTransformer(func=self.times_rsq_const, inverse_func=self.div_rsq_const)
+            self.scaler_y.fit(self.y_train)
+
         elif scaling=='xrsqmean':
             self.y_train_xrsq_mean = np.mean(self.times_rsq(self.y_train), axis=0)
             self.y_train_xrsq_std = np.std(self.times_rsq(self.y_train), axis=0)
             self.scaler_y = FunctionTransformer(func=self.times_rsq_mean, inverse_func=self.div_rsq_mean) 
             self.scaler_y.fit(self.y_train)  
 
+        elif scaling=='xrsqmeanconst':
+            self.y_train_xrsq_mean = np.mean(self.times_rsq(self.y_train), axis=0)
+            self.y_train_xrsq_std = np.std(self.times_rsq(self.y_train), axis=0)
+            self.scaler_y = FunctionTransformer(func=self.times_rsq_mean_const, inverse_func=self.div_rsq_mean_const) 
+            self.scaler_y.fit(self.y_train)  
+
+        elif scaling=='xrsqminmax':
+            self.y_train_xrsq_min = np.min(self.times_rsq(self.y_train), axis=0)
+            self.y_train_xrsq_max = np.max(self.times_rsq(self.y_train), axis=0)
+            self.scaler_y = FunctionTransformer(func=self.times_rsq_minmax, inverse_func=self.div_rsq_minmax)
+            self.scaler_y.fit(self.y_train)
+
         else:
-            raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean', 'xrsq', 'xrsqmean']")
+            raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean', 'xrsq', 'xrsqconst', 'xrsqmean', 'xrsqminmax']")
+
 
     def scale_y_error(self, scaling):
         
@@ -245,15 +292,25 @@ class Emulator(object):
         elif scaling=='xrsq':
             self.y_error_scaled = self.y_error * self.r_vals**2
 
-        elif scaling=='xrsqmean':
+        elif scaling=='xrsqconst':
+            self.y_error_scaled = self.y_error * self.r_vals**2
+            self.y_error_scaled /= 300 #magic - chosen constant
+
+        elif scaling=='xrsqmean' or scaling=='xrsqmeanconst':
             self.y_train_xrsq_std = np.std(self.times_rsq(self.y_train), axis=0)
             self.y_error_scaled = self.y_error * self.r_vals**2 # xsqr part
             self.y_error_scaled /= self.y_train_xrsq_std # mean part; only std bc don't want to shift it, just rescale by std of training
             #print("ARTIFICIAL ERRx1.5")
             #self.y_error_scaled *= 1.5
 
+        elif scaling=='xrsqminmax':
+            self.y_train_xrsq_min = np.min(self.times_rsq(self.y_train), axis=0)
+            self.y_train_xrsq_max = np.max(self.times_rsq(self.y_train), axis=0)
+            self.y_error_scaled = self.y_error * self.r_vals**2 # xsqr part
+            self.y_error_scaled /= (self.y_train_xrsq_max - self.y_train_xrsq_min) # only do the multiplication part bc don't want to shift it, just rescale
+
         else:
-            raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean', 'xrsq', 'xrsqmean']")
+            raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean', 'xrsq', 'xrsqconst', 'xrsqmean', 'xrsqminmax']")
 
     def scale_training_data(self):
         self.x_train_scaled = self.scaler_x.transform(self.x_train)  
@@ -560,8 +617,13 @@ class EmulatorGeorge(Emulator):
         p0 = np.exp(np.full(self.n_params, 0.1))
         k_expsq = george.kernels.ExpSquaredKernel(p0, ndim=self.n_params)
         k_m32 = george.kernels.Matern32Kernel(p0, ndim=self.n_params)
-        k_const = george.kernels.ConstantKernel(0.1, ndim=self.n_params)        
-        kernel = k_expsq*k_const + k_m32 # this is "M32ExpConst"
+        k_const = george.kernels.ConstantKernel(0.1, ndim=self.n_params)    
+                
+        k_const2 = george.kernels.ConstantKernel(0.1, ndim=self.n_params)        
+    
+        #kernel = k_expsq*k_const + k_m32 # this is "M32ExpConst"
+        kernel = k_expsq*k_const + k_m32 + k_const2 # this is "M32ExpConst2"
+        print("USING M32ExpConst2 KERNEL, MIGHT WANNA CHANGE BACK to M32ExpConst ??")
 
         model = george.GP(kernel, mean=np.mean(y_train_scaled_bin), solver=george.BasicSolver)
         model.compute(self.x_train_scaled, y_error_scaled_bin)

@@ -91,10 +91,16 @@ def load_hod_params_mock(mock_name):
         hod_params = [float("NaN")]*len(hod_param_names)
     return hod_param_names, hod_params
 
-def load_cosmo_params():
+def load_cosmo_params(mock_name):
     # 7 cosmo params
     cosmo_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w"]
-    cosmo_params = np.loadtxt('../tables/cosmology_camb_test_box_full.dat')
+    if mock_name=='aemulus_test' or mock_name=='aemulus_Msatmocks_test':
+        cosmo_fn = '../tables/cosmology_camb_test_box_full.dat'
+    elif mock_name=='aemulus_train' or mock_name=='aemulus_Msatmocks_train':
+        cosmo_fn = '../tables/cosmology_camb_full.dat'
+    else: 
+        raise ValueError(f'Mock name {mock_name} not recognized!')
+    cosmo_params = np.loadtxt(cosmo_fn)
     return cosmo_param_names, cosmo_params
 
 def load_hod_params(mock_name):
@@ -106,6 +112,8 @@ def load_hod_params(mock_name):
         hod_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/test_mocks/HOD_test_np11_n5000_new_f_env_Msat.dat'
     elif mock_name=='aemulus_Msatmocks_train':
         hod_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/training_mocks/HOD_design_np11_n5000_new_f_env_Msat.dat'
+    else: 
+        raise ValueError(f'Mock name {mock_name} not recognized!')
     hod_params = np.loadtxt(hod_fn)
     hod_params[:, 0] = np.log10(hod_params[:, 0])
     hod_params[:, 2] = np.log10(hod_params[:, 2])
@@ -126,22 +134,23 @@ def get_hod_bounds(mock_name):
         hod_bounds[pname] = [pmin, pmax]
     return hod_bounds
 
-def get_cosmo_bounds():
+def get_cosmo_bounds(mock_name):
     cosmo_bounds = {}
-    cosmo_param_names, cosmo_params = load_cosmo_params()
+    cosmo_param_names, cosmo_params = load_cosmo_params(mock_name)
     for pname in cosmo_param_names:
         pidx = cosmo_param_names.index(pname)
         vals = cosmo_params[:,pidx]
         pmin = np.min(vals)
         pmax = np.max(vals)
         # Add a 10% buffer on either side of training set
-        buf = (pmax-pmin)*0.1
-        cosmo_bounds[pname] = [pmin-buf, pmax+buf]
+        # buf = (pmax-pmin)*0.1
+        # cosmo_bounds[pname] = [pmin-buf, pmax+buf]
+        cosmo_bounds[pname] = [pmin, pmax]
     return cosmo_bounds
 
 def get_bounds(mock_name):
     bounds = get_hod_bounds(mock_name)
-    bounds.update(get_cosmo_bounds())
+    bounds.update(get_cosmo_bounds(mock_name))
     return bounds
 
 def make_label(statistics):
@@ -197,6 +206,9 @@ def covariance(arrs, zeromean=False):
     arrs = np.array(arrs)
     N = arrs.shape[0]
 
+    # TODO: doesn't this seem like opposite of zeromean?? uh...
+    # maybe i meant we *assume* the data has zero mean already so we 
+    # don't correct for it - like with fractional errors!
     if zeromean:
         w = arrs
     else:

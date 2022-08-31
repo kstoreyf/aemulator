@@ -162,7 +162,7 @@ def plot_accuracy(statistic, train_tag):
     axarr[2].axhline(0, color='k', lw=0.5)
 
 
-def plot_accuracy_figure(statistics, train_tags):
+def plot_accuracy_figure(statistics, train_tags, mock_tag_test='_aemulus_test'):
     
     fig = plt.figure(figsize=(20, 15))
 
@@ -187,11 +187,11 @@ def plot_accuracy_figure(statistics, train_tags):
         color_idx = np.linspace(0, 1, len(ids_cosmo_unique))
 
         n_bins = 9
-        y_test_dir = '/home/users/ksf293/clust/results_aemulus_test_mean'
+        # assuming comparing mean
+        y_test_dir = f'/home/users/ksf293/clust/results{mock_tag_test}_mean'
         predictions_dir = f'../predictions/predictions_{statistic}{train_tag}'
         ys_test = np.empty((n_test, n_bins))
         ys_pred = np.empty((n_test, n_bins))
-
         alpha = 0.4
         colors = np.empty((n_test, 4)) # 4 for RGBA
         zorders = np.arange(n_test)
@@ -228,6 +228,7 @@ def plot_accuracy_figure(statistics, train_tags):
                           marker=None, zorder=zorders[i])
 
             axarr[1].plot(r_vals, err_frac, color=colors[i], alpha=alpha, zorder=zorders[i])
+            
 
         errs_frac = (ys_pred - ys_test)/ys_test
         #err_frac_mean = np.std(errs_frac, axis=0)
@@ -240,10 +241,10 @@ def plot_accuracy_figure(statistics, train_tags):
         axarr[2].plot(r_vals, err_frac_p84, color='black')
 
         #err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
-        err_fn = f"../covariances/error_aemulus_{statistic}_hod3_test0.dat"
-        sample_var = np.loadtxt(err_fn)
-        sample_std = np.sqrt(sample_var)
-        print(sample_var)
+        err_fn = f"../covariances/stdev{mock_tag_test}_{statistic}_hod3_test0.dat"
+        sample_std = np.loadtxt(err_fn)
+        #sample_var = np.loadtxt(err_fn)
+        #sample_std = np.sqrt(sample_var)
         axarr[2].fill_between(r_dict[statistic], -sample_std, sample_std, color='lightblue', alpha=0.7)
         axarr[2].fill_between(r_dict[statistic], -sample_std/np.sqrt(5), sample_std/np.sqrt(5), color='steelblue', alpha=0.7)
 
@@ -727,3 +728,18 @@ def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, s
     if label_xticks:
         ax.set_xlabel(xlabel)
     
+
+def plot_statistic(statistic, x_vals, y_vals):
+    plt.figure(figsize=(7,5))
+    ylabel = stat_labels[statistic]
+    if statistic=='xi2':
+        plt.plot(x_vals, x_vals**2 * y_vals, lw=2)
+        ylabel = r'$s^2$' + ylabel
+    else:
+        plt.plot(x_vals, y_vals, lw=2)
+
+    plt.xlabel(r_labels[statistic])
+    plt.ylabel(ylabel)
+    
+    plt.xscale(scale_dict[statistic][0])
+    plt.yscale(scale_dict[statistic][1])
