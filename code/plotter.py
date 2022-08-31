@@ -743,3 +743,5 @@ def plot_statistic(statistic, x_vals, y_vals):
     
     plt.xscale(scale_dict[statistic][0])
     plt.yscale(scale_dict[statistic][1])
+
+

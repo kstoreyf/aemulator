@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 import pickle
+import os
 from collections import defaultdict
 
 from dynesty import utils as dyfunc
@@ -396,3 +397,51 @@ def print_uncertainty_results_abstract(results_dict, params, id_pairs, prior_dic
         increased_precision = -uncertainty_change
         print(f"Increased precision from standard to beyond by: {100*increased_precision:.1f}%")
         print()
+
+
+def load_statistics(statistic, training_dir_base, id_pairs, clust_tag='_test_0'):
+    training_dir = f'{training_dir_base}/results_{statistic}'
+    r_arr = []
+    y_train_arr = []
+    for id_pair in id_pairs:
+        cosmo_id, hod_id = id_pair
+        fn_y_train = f'{statistic}_cosmo_{cosmo_id}_HOD_{hod_id}{clust_tag}.dat'
+        r_vals, y_train = np.loadtxt(os.path.join(training_dir, fn_y_train), delimiter=',', unpack=True)
+        r_arr.append(r_vals)
+        y_train_arr.append(y_train)
+        if statistic!='xi2' and np.any(y_train <= 0):
+            print(id_pair, " has 0s or negatives in data vector!")
+    r_arr = np.array(r_arr)
+    y_train_arr = np.array(y_train_arr)
+    return r_arr, y_train_arr
+
+
+def load_id_pairs_train(mock_tag_train):
+    ### ID values (cosmo and hod numbers)
+    fn_train = '../tables/id_pairs_train.txt'
+    id_pairs_train = np.loadtxt(fn_train, delimiter=',', dtype=int)
+    print("original number of training ID pairs:", len(id_pairs_train))
+    # Remove models that give zero or negative clustering statistic values
+    # for all of the statistics (even the ones that are ok)
+    if mock_tag_train=='_aemulus_Msatmocks_train':
+        bad_id_indices = [1296, 1335]
+        id_pairs_train = np.delete(id_pairs_train, bad_id_indices, axis=0)
+        print("Deleted bad ID pairs with indices", bad_id_indices)
+    n_train = len(id_pairs_train)
+    print("N train:", n_train)
+    return id_pairs_train 
+
+
+def get_closest_models(statistics, y_vals, id_pairs, results_dir, n_closest=2000):
+    errs_all = []
+    for i, statistic in enumerate(statistics):
+        _, y_arr = load_statistics(statistic, results_dir, id_pairs)
+        errs = np.mean((y_arr-y_vals[i])/y_vals[i], axis=1)
+        errs_all.append(errs)
+    errs_all = np.array(errs_all).T
+    errs_sum = np.sum(errs_all, axis=1)
+
+    # https://stackoverflow.com/questions/34226400/find-the-index-of-the-k-smallest-values-of-a-numpy-array
+    idx = np.argpartition(errs_sum, n_closest)
+    idxs_closest = idx[:n_closest]
+    return id_pairs[idxs_closest], idxs_closest
