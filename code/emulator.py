@@ -78,18 +78,22 @@ class Emulator(object):
     def set_training_data(self):
         
         ### ID values (cosmo and hod numbers)
-        fn_train = '../tables/id_pairs_train.txt'
+        if 'nclosest' in self.model_fn:
+            for tag in self.model_fn.split('_'):
+                if 'nclosest' in tag:
+                    fn_train = f'../tables/id_pairs_{tag}.txt'
+        else:
+            fn_train = '../tables/id_pairs_train.txt'
         self.id_pairs_train = np.loadtxt(fn_train, delimiter=',', dtype=int)
         print("original number of training ID pairs:", len(self.id_pairs_train))
         # Remove models that give zero or negative clustering statistic values
         # for all of the statistics (even the ones that are ok)
-        if self.mock_tag_train=='_aemulus_Msatmocks_train':
+        if self.mock_tag_train=='_aemulus_Msatmocks_train' and 'nclosest' not in self.model_fn:
             bad_id_indices = [1296, 1335]
             self.id_pairs_train = np.delete(self.id_pairs_train, bad_id_indices, axis=0)
             print("Deleted bad ID pairs with indices", bad_id_indices)
         self.n_train = len(self.id_pairs_train)
         print("N train:", self.n_train)
-
         ### x values (data, cosmo and hod values)
 
         cosmos_train_fn = '../tables/cosmology_camb_full.dat'
@@ -130,12 +134,12 @@ class Emulator(object):
         self.r_vals = r_vals
 
         #FOR TESTING PURPOSES ONLY
-        #print("TINY TRAINING SET")
-        #print(self.x_train.shape)
-        #self.n_train = 10
-        #self.x_train = self.x_train[:self.n_train,:]
-        #self.y_train = self.y_train[:self.n_train,:]
-        #print(self.x_train.shape)
+        # print("TINY TRAINING SET")
+        # print(self.x_train.shape)
+        # self.n_train = 10
+        # self.x_train = self.x_train[:self.n_train,:]
+        # self.y_train = self.y_train[:self.n_train,:]
+        # print(self.x_train.shape)
 
 
     def set_testing_data(self):
@@ -621,9 +625,9 @@ class EmulatorGeorge(Emulator):
                 
         k_const2 = george.kernels.ConstantKernel(0.1, ndim=self.n_params)        
     
-        #kernel = k_expsq*k_const + k_m32 # this is "M32ExpConst"
-        kernel = k_expsq*k_const + k_m32 + k_const2 # this is "M32ExpConst2"
-        print("USING M32ExpConst2 KERNEL, MIGHT WANNA CHANGE BACK to M32ExpConst ??")
+        kernel = k_expsq*k_const + k_m32 # this is "M32ExpConst"
+        #kernel = k_expsq*k_const + k_m32 + k_const2 # this is "M32ExpConst2"
+        #print("USING M32ExpConst2 KERNEL, MIGHT WANNA CHANGE BACK to M32ExpConst ??")
 
         model = george.GP(kernel, mean=np.mean(y_train_scaled_bin), solver=george.BasicSolver)
         model.compute(self.x_train_scaled, y_error_scaled_bin)

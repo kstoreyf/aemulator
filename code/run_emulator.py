@@ -4,18 +4,19 @@ import emulator
 import utils
 
 
-statistic = 'xi2'
+#statistic = 'xi2'
+statistic = 'mcf'
 emu_name = 'George'
 #emu_name = 'GPFlowVGP'
 #emu_name = 'PyTorch'
 max_iter = 1000
-#scaling = 'log'
+scaling = 'log'
 #scaling = 'xrsqmean'
-scaling = 'xrsqmean'
 #train_tag = f'_{emu_name}_{scaling}'
 mock_tag_train = '_aemulus_Msatmocks_train'
 mock_tag_test = '_aemulus_Msatmocks_test'
-train_tag = f'_{emu_name}_{scaling}_errstdev_Msatmocks_kM32ExpConst2'
+#train_tag = f'_{emu_name}_{scaling}_errstdev_Msatmocks_kM32ExpConst2'
+train_tag = f'_{emu_name}_{scaling}_errstdev_Msatmocks_uchuunclosest2000'
 train_mode = True
 test_mode = True
 
