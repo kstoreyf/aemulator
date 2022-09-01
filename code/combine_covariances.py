@@ -16,17 +16,17 @@ def main():
     run(mock_tag_cov, stat_str, mode)
 
 
-def run(mock_tag_cov, stat_str, mode):
+def run(mock_tag_cov, stat_str, mode, cov_tag_extra=''):
 
     mock_name_glam = 'glam'
     cov_dir = '../covariances'
     if mode=='glam_for_uchuu':
-        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}_uchuu{mock_name_glam}_smooth_{stat_str}.dat"
+        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_uchuu{mock_name_glam}_smooth_{stat_str}.dat"
     elif mode=='glam_for_aemulus':
         cov_glam_fn = f'{cov_dir}/cov_{mock_name_glam}_{stat_str}.dat'
-        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}_{mock_name_glam}_{stat_str}.dat"
+        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_{mock_name_glam}_{stat_str}.dat"
     elif mode=='aemulus_for_uchuu':
-        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}_uchuu_smooth_{stat_str}.dat"
+        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_uchuu_smooth_{stat_str}.dat"
 
     if 'glam' in mode:
         cov_glam_fn = f'{cov_dir}/cov_{mock_name_glam}_{stat_str}.dat'
@@ -34,10 +34,10 @@ def run(mock_tag_cov, stat_str, mode):
 
     cov_aemulus_fn = f'{cov_dir}/cov{mock_tag_cov}_{stat_str}_hod3_test0.dat'
     #cov_emuperf_fn = f'{cov_dir}/cov_emuperf_{stat_str}_nonolap_hod3_test0_mean_test0.dat'
-    cov_emuperf_fn = f'{cov_dir}/cov_emuperf{mock_tag_cov}_{stat_str}_hod3_test0.dat'
+    cov_emuperf_fn = f'{cov_dir}/cov_emuperf{mock_tag_cov}{cov_tag_extra}_{stat_str}_hod3_test0.dat'
 
     # TODO: check if i want to be using smoothgauss here! wasnt before, bc only smoothed after glam failed
-    cov_smooth_emuperf_fn = f'{cov_dir}/cov_smoothgauss_emuperf{mock_tag_cov}_{stat_str}_hod3_test0.dat'
+    cov_smooth_emuperf_fn = f'{cov_dir}/cov_smoothgauss_emuperf{mock_tag_cov}{cov_tag_extra}_{stat_str}_hod3_test0.dat'
     
     # load covs
     cov_aemulus = np.loadtxt(cov_aemulus_fn)

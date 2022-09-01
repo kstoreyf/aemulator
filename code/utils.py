@@ -399,14 +399,18 @@ def print_uncertainty_results_abstract(results_dict, params, id_pairs, prior_dic
         print()
 
 
-def load_statistics(statistic, training_dir_base, id_pairs, clust_tag='_test_0'):
-    training_dir = f'{training_dir_base}/results_{statistic}'
+def load_statistics(statistic, result_dir_base, id_pairs):
+    if 'mean' in result_dir_base:
+        clust_tag = '_mean'
+    else:
+        clust_tag = '_test_0'
+    result_dir = f'{result_dir_base}/results_{statistic}'
     r_arr = []
     y_train_arr = []
     for id_pair in id_pairs:
         cosmo_id, hod_id = id_pair
         fn_y_train = f'{statistic}_cosmo_{cosmo_id}_HOD_{hod_id}{clust_tag}.dat'
-        r_vals, y_train = np.loadtxt(os.path.join(training_dir, fn_y_train), delimiter=',', unpack=True)
+        r_vals, y_train = np.loadtxt(os.path.join(result_dir, fn_y_train), delimiter=',', unpack=True)
         r_arr.append(r_vals)
         y_train_arr.append(y_train)
         if statistic!='xi2' and np.any(y_train <= 0):
@@ -416,20 +420,37 @@ def load_statistics(statistic, training_dir_base, id_pairs, clust_tag='_test_0')
     return r_arr, y_train_arr
 
 
-def load_id_pairs_train(mock_tag_train):
-    ### ID values (cosmo and hod numbers)
-    fn_train = '../tables/id_pairs_train.txt'
+def load_id_pairs_train(mock_tag_train, train_tag):
+    ## ID values (cosmo and hod numbers)
+    if 'nclosest' in train_tag:
+        for tag in train_tag.split('_'):
+            if 'nclosest' in tag:
+                fn_train = f'../tables/id_pairs_train_{tag}.txt'
+    else:
+        fn_train = '../tables/id_pairs_train.txt'
     id_pairs_train = np.loadtxt(fn_train, delimiter=',', dtype=int)
     print("original number of training ID pairs:", len(id_pairs_train))
     # Remove models that give zero or negative clustering statistic values
     # for all of the statistics (even the ones that are ok)
-    if mock_tag_train=='_aemulus_Msatmocks_train':
+    if mock_tag_train=='_aemulus_Msatmocks_train' and 'nclosest' not in train_tag:
         bad_id_indices = [1296, 1335]
         id_pairs_train = np.delete(id_pairs_train, bad_id_indices, axis=0)
         print("Deleted bad ID pairs with indices", bad_id_indices)
     n_train = len(id_pairs_train)
     print("N train:", n_train)
     return id_pairs_train 
+
+
+def load_id_pairs_test(train_tag):
+    ### ID values (cosmo and hod numbers)
+    if 'nclosest' in train_tag:
+        for tag in train_tag.split('_'):
+            if 'nclosest' in tag:
+                fn_test = f'../tables/id_pairs_test_{tag}.txt'
+    else:
+        fn_test = '../tables/id_pairs_test.txt'
+    id_pairs_test = np.loadtxt(fn_test, delimiter=',', dtype=int)
+    return id_pairs_test 
 
 
 def get_closest_models(statistics, y_vals, id_pairs, results_dir, n_closest=2000):
@@ -444,4 +465,21 @@ def get_closest_models(statistics, y_vals, id_pairs, results_dir, n_closest=2000
     # https://stackoverflow.com/questions/34226400/find-the-index-of-the-k-smallest-values-of-a-numpy-array
     idx = np.argpartition(errs_sum, n_closest)
     idxs_closest = idx[:n_closest]
-    return id_pairs[idxs_closest], idxs_closest
+    err_max_of_chosen = np.max(errs_sum[idxs_closest])
+    print(np.min(errs_sum), np.max(errs_sum), err_max_of_chosen)
+    return id_pairs[idxs_closest], idxs_closest, err_max_of_chosen
+
+
+def get_models_within_err(statistics, y_vals, id_pairs, results_dir, err):
+    errs_all = []
+    for i, statistic in enumerate(statistics):
+        _, y_arr = load_statistics(statistic, results_dir, id_pairs)
+        errs = np.mean((y_arr-y_vals[i])/y_vals[i], axis=1)
+        errs_all.append(errs)
+    errs_all = np.array(errs_all).T
+    errs_sum = np.sum(errs_all, axis=1)
+
+    # https://stackoverflow.com/questions/34226400/find-the-index-of-the-k-smallest-values-of-a-numpy-array
+    idxs_within_err = np.where(errs_sum < err)[0]
+    return id_pairs[idxs_within_err], idxs_within_err
+

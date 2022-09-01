@@ -18,8 +18,8 @@ def compare_accuracy(statistic, train_tags, labels, colors):
     fig, axarr = plt.subplots(nrows, 1, figsize=(10,10), gridspec_kw={'height_ratios': [1]*nrows})
     plt.subplots_adjust(hspace=0.25)
 
-    fn_test = '../tables/id_pairs_test.txt'
-    id_pairs_test = np.loadtxt(fn_test, delimiter=',', dtype='int')
+    # assume all same pairs
+    id_pairs_test = utils.load_id_pairs_test(train_tags[0])
     n_test = id_pairs_test.shape[0]
 
     ids_cosmo_unique = set(id_pairs_test[:,0])
@@ -75,7 +75,7 @@ def plot_accuracy(statistic, train_tag):
     plt.subplots_adjust(hspace=0)
 
     fn_test = '../tables/id_pairs_test.txt'
-    id_pairs_test = np.loadtxt(fn_test, delimiter=',', dtype='int')
+    id_pairs_test = utils.load_id_pairs_test(train_tag)
     n_test = id_pairs_test.shape[0]
 
     ids_cosmo_unique = set(id_pairs_test[:,0])
@@ -179,8 +179,7 @@ def plot_accuracy_figure(statistics, train_tags, mock_tag_test='_aemulus_test'):
         ax2 = plt.Subplot(fig, inner[2])
         axarr = [ax0, ax1, ax2]
 
-        fn_test = '../tables/id_pairs_test.txt'
-        id_pairs_test = np.loadtxt(fn_test, delimiter=',', dtype='int')
+        id_pairs_test = utils.load_id_pairs_test(train_tag)
         n_test = id_pairs_test.shape[0]
 
         ids_cosmo_unique = set(id_pairs_test[:,0])

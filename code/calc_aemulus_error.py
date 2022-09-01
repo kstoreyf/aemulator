@@ -9,6 +9,7 @@ def main():
     stat_str = 'mcf'
     run(mock_tag, stat_str)
 
+
 def run(mock_tag, stat_str):
 
     statistics = stat_str.split('_')

@@ -6,9 +6,10 @@ from utils import rbins, rlin
 
 def main():
     #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
+    stat_strs = ['wp_xi_upf', 'wp_xi_mcf', 'wp_xi_upf_mcf']
     #stat_strs = ['wp_xi', 'wp_xi_upf', 'wp_xi_mcf']
     #stat_strs = ['wp', 'wp_xi_upf', 'wp_xi_mcf']
-    stat_strs = ['wp_xi_upf', 'wp_xi_mcf']
+    #stat_strs = ['wp_xi_upf', 'wp_xi_mcf']
     #stat_strs = ['wp', 'wp_xi', 'wp_xi_upf_mcf']
     #single()
     #recovery_set()
@@ -36,7 +37,9 @@ def uchuu(stat_str):
     #config_tag = '_Msatmocks_covglam4_allmaxscale6'
     #config_tag = '_Msatmocks_covaemsmooth'
     #config_tag = '_Msatmocks_covglamsmooth_ellcosmoprior'
-    config_tag = '_Msatmocks_covglamsmooth_boundsingle'
+    cov_tag_extra = '_uchuunclosest2000'
+    #cov_tag_extra = ''
+    config_tag = f'_Msatmocks_covglamsmooth_boundsingle{cov_tag_extra}'
     #config_tag = '_Msatmocks_wpmaxscale6'
 
     param_tag = '_all'
@@ -45,7 +48,8 @@ def uchuu(stat_str):
 
     emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
     scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
-    train_tags_extra = ['_errstdev_Msatmocks']*len(statistics)
+
+    train_tags_extra = [f'_errstdev_Msatmocks{cov_tag_extra}']*len(statistics)
 
     chain_results_fn = f'/home/users/ksf293/aemulator/chains/results/results_{stat_str}{data_tag}{param_tag}{config_tag}.pkl'
     n_threads = utils.get_nthreads(len(statistics))
@@ -56,7 +60,7 @@ def uchuu(stat_str):
     #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuuglam4_{stat_str}.dat'
     # combined glam cov
     #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuuglam_{stat_str}.dat'
-    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuuglam_smooth_{stat_str}.dat'
+    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}{cov_tag_extra}_uchuuglam_smooth_{stat_str}.dat'
     # aemulus for uchuu cov
     #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuu_{stat_str}.dat'
     #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuu_smooth_{stat_str}.dat'

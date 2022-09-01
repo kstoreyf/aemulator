@@ -9,6 +9,8 @@ import george
 import joblib
 from sklearn.preprocessing import StandardScaler, FunctionTransformer  
 
+import utils
+
 # from sklearn.neural_network import MLPRegressor
 
 # import gpflow
@@ -78,20 +80,8 @@ class Emulator(object):
     def set_training_data(self):
         
         ### ID values (cosmo and hod numbers)
-        if 'nclosest' in self.model_fn:
-            for tag in self.model_fn.split('_'):
-                if 'nclosest' in tag:
-                    fn_train = f'../tables/id_pairs_{tag}.txt'
-        else:
-            fn_train = '../tables/id_pairs_train.txt'
-        self.id_pairs_train = np.loadtxt(fn_train, delimiter=',', dtype=int)
-        print("original number of training ID pairs:", len(self.id_pairs_train))
-        # Remove models that give zero or negative clustering statistic values
-        # for all of the statistics (even the ones that are ok)
-        if self.mock_tag_train=='_aemulus_Msatmocks_train' and 'nclosest' not in self.model_fn:
-            bad_id_indices = [1296, 1335]
-            self.id_pairs_train = np.delete(self.id_pairs_train, bad_id_indices, axis=0)
-            print("Deleted bad ID pairs with indices", bad_id_indices)
+        # ok to pass model_fn instead of train tag bc the former contains the latter
+        self.id_pairs_train = utils.load_id_pairs_train(self.mock_tag_train, self.model_fn)
         self.n_train = len(self.id_pairs_train)
         print("N train:", self.n_train)
         ### x values (data, cosmo and hod values)
@@ -145,10 +135,10 @@ class Emulator(object):
     def set_testing_data(self):
 
         ### ID values (cosmo and hod numbers)
-        fn_test = '../tables/id_pairs_test.txt'
-        self.id_pairs_test = np.loadtxt(fn_test, delimiter=',', dtype=int)
-        self.n_test = self.id_pairs_test.shape[0]
 
+        self.id_pairs_test = utils.load_id_pairs_test(self.model_fn)
+        self.n_test = self.id_pairs_test.shape[0]
+        print("N test ids:", self.n_test)
         ### x values (data, cosmo and hod values)
 
         cosmos_test_fn = '../tables/cosmology_camb_test_box_full.dat'
@@ -432,7 +422,7 @@ class EmulatorGPFlow(Emulator):
         print_summary(self.model)
         print("Optimizing")
         opt = gpflow.optimizers.Scipy()
-        print(self.model.trainable_variables)
+        #print(self.model.trainable_variables)
         #print()
         # there has GOT to be a better way to do this
         n_vars = np.sum([len(tv.numpy()) if type(tv.numpy()) is np.ndarray else 1 for tv in self.model.trainable_variables])
@@ -440,8 +430,8 @@ class EmulatorGPFlow(Emulator):
         opt_logs = opt.minimize(self.model.training_loss, self.model.trainable_variables, 
                                 method='L-BFGS-B', bounds=bounds,
                                 options=dict(maxiter=max_iter))
-        print_summary(self.model)
-        print(opt_logs)
+        #print_summary(self.model)
+        #print(opt_logs)
 
     def test(self):
         # predict_f outputs mean and variance.
@@ -462,11 +452,11 @@ class EmulatorGPFlowVGP(Emulator):
 
     def train(self, max_iter=1000):
 
-        print(self.x_train_scaled.shape)
+        #(self.x_train_scaled.shape)
         self.x_train_scaled = self.x_train_scaled[:50,:]
         self.y_train_scaled = self.y_train_scaled[:50,:]
         self.n_train = 50
-        print(self.x_train_scaled.shape)
+        #print(self.x_train_scaled.shape)
 
         lengthscales = np.full(self.n_params, 1.0) # defines amount of wiggliness
         k_expsq = gpflow.kernels.SquaredExponential(variance=0.1, lengthscales=lengthscales)
@@ -476,13 +466,13 @@ class EmulatorGPFlowVGP(Emulator):
         # k_m32 = gpflow.kernels.Matern32(variance=0.1)#, lengthscales=lengthscales)
         # k_const = gpflow.kernels.Constant(0.1)
         kernel = k_expsq*k_const + k_m32
-        print_summary(kernel)
+        #print_summary(kernel)
 
         likelihood = HeteroskedasticGaussian()
 
         #Y_data = np.hstack([Y, NoiseVar])
         print("Data shapes")
-        print(self.y_train_scaled.shape, self.y_error_scaled.shape)
+        #print(self.y_train_scaled.shape, self.y_error_scaled.shape)
         y_error_matched = np.empty(self.y_train_scaled.shape)
         for i in range(self.n_train):
             y_error_matched[i,:] = self.y_error_scaled
@@ -491,7 +481,7 @@ class EmulatorGPFlowVGP(Emulator):
         y_data = np.vstack([self.y_train_scaled, self.y_error_scaled])
         #y_data = np.hstack([self.y_train_scaled, y_error_matched])
         #y_data = np.array([self.y_train_scaled, y_error_matched]).reshape(self.n_train, self.n_bins_tot, 2)
-        print(y_data.shape)
+        #print(y_data.shape)
         #y_data = [self.y_train_scaled, self.y_error_scaled]
         #print(y_data.shape)
         data = (self.x_train_scaled, y_data)
@@ -500,7 +490,7 @@ class EmulatorGPFlowVGP(Emulator):
         #mean_function = gpflow.mean_functions.Constant(np.mean(self.y_train_scaled, axis=0))
         #self.model = gpflow.models.GPR(data=data, kernel=kernel, mean_function=mean_function)
         self.model = gpflow.models.VGP(data, kernel=kernel, likelihood=likelihood, num_latent_gps=1)
-        print_summary(self.model)
+        #print_summary(self.model)
 
         print("Optimizing")
         natgrad = NaturalGradient(gamma=1.0)

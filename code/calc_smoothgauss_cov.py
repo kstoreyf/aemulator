@@ -9,11 +9,11 @@ def main():
     mock_tag = '_aemulus_Msatmocks_test'
     run(mock_tag, 'wp_xi_xi2_upf_mcf')
 
-def run(mock_tag, stat_str):
+def run(mock_tag, stat_str, cov_tag_extra=''):
 
     statistics = stat_str.split('_')
 
-    cov_tag = 'emuperf'+mock_tag
+    cov_tag = 'emuperf'+mock_tag+cov_tag_extra
     errtag = '_hod3_test0'
 
     cov_dir = '../covariances'    
