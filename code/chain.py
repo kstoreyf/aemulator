@@ -209,7 +209,7 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
 
         print("initialize sampler")
 
-        print("USING FLAT COSMO PRIOR; ARE U SURE?")
+        #print("USING FLAT COSMO PRIOR; ARE U SURE?")
         sampler = dynesty.NestedSampler(
             log_likelihood,
             #log_likelihood_ellprior,

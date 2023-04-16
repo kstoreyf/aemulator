@@ -96,6 +96,9 @@ class Emulator(object):
         elif self.mock_tag_train=='_aemulus_Msatmocks_train':
             # updated Msat 
             hods_train_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/training_mocks/HOD_design_np11_n5000_new_f_env_Msat.dat'
+        elif self.mock_tag_train=='_aemulus_fmaxmocks_train':
+            hods_train_fn = '/mount/sirocco1/zz681/emulator/CMASSLOWZ_Msat_fmax_new/training_mocks/HOD_design_np11_n5000_new_f_env_Msat_fmax_new.dat'
+        
         hods_train = np.loadtxt(hods_train_fn)
         # Convert these columns (0: M_sat, 2: M_cut) to log to reduce range
         hods_train[:, 0] = np.log10(hods_train[:, 0])

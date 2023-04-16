@@ -6,7 +6,8 @@ from utils import rbins, rlin
 
 def main():
     #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
-    stat_strs = ['wp_xi_upf', 'wp_xi_mcf', 'wp_xi_upf_mcf']
+    stat_strs = ['wp_xi_xi2_upf', 'wp_xi_xi2_upf_mcf']
+    #stat_strs = [ 'wp_xi_xi2_mcf']
     #stat_strs = ['wp_xi', 'wp_xi_upf', 'wp_xi_mcf']
     #stat_strs = ['wp', 'wp_xi_upf', 'wp_xi_mcf']
     #stat_strs = ['wp_xi_upf', 'wp_xi_mcf']
@@ -37,9 +38,12 @@ def uchuu(stat_str):
     #config_tag = '_Msatmocks_covglam4_allmaxscale6'
     #config_tag = '_Msatmocks_covaemsmooth'
     #config_tag = '_Msatmocks_covglamsmooth_ellcosmoprior'
-    cov_tag_extra = '_uchuunclosest2000'
+    #infl_tag = '_inflateupferr3nox'
+    infl_tag = ''
+    comb_tag = '_smooth'+infl_tag
+    cov_tag_extra = '_uchuuchi2nclosest2000'
     #cov_tag_extra = ''
-    config_tag = f'_Msatmocks_covglamsmooth_boundsingle{cov_tag_extra}'
+    config_tag = f'_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle{cov_tag_extra}{infl_tag}'
     #config_tag = '_Msatmocks_wpmaxscale6'
 
     param_tag = '_all'
@@ -60,7 +64,7 @@ def uchuu(stat_str):
     #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuuglam4_{stat_str}.dat'
     # combined glam cov
     #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuuglam_{stat_str}.dat'
-    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}{cov_tag_extra}_uchuuglam_smooth_{stat_str}.dat'
+    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}{cov_tag_extra}_uchuuglam{comb_tag}_{stat_str}.dat'
     # aemulus for uchuu cov
     #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuu_{stat_str}.dat'
     #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuu_smooth_{stat_str}.dat'
@@ -72,7 +76,14 @@ def uchuu(stat_str):
     if 'wpmaxscale6' in config_tag:
         bins = []
         for i in range(len(statistics)):
-            if 'wp' in statistics[i]:
+            if 'wp' in statistics[i]: #writing this way to include "wp80"
+                bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    if 'upfmaxscale6' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if statistics[i]=='upf':
                 bins.append(list(range(0, 7)))
             else:
                 bins.append(list(range(0, 9)))

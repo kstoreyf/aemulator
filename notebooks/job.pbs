@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -N jupyter
+#PBS -l walltime=16:00:00
+#PBS -l nodes=1:ppn=12
+#PBS -m ae
+#PBS -o logs/$PBS_JOBNAME.out
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+PATH=$PBS_O_PATH
+echo $PBS_O_WORKDIR
+echo 'starting'
+echo -n 'Job is running on node '; cat $PBS_NODEFILE
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate aem
+jupyter notebook --no-browser --port=8870
+echo 'done'
+

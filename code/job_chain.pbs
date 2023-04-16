@@ -1,6 +1,6 @@
 #!/bin/bash
 ##PBS -N chain_wp_aemulus_Msatmocks_test_c3h3
-#PBS -N chain_uchuu_wp_xi_upf_mcf_Msatmocks_covglamsmooth_boundsingle_uchuunclosest2000
+#PBS -N chain_uchuu_wp_xi_xi2_upf_mcf_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle_uchuuchi2nclosest2000
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=24
 #PBS -m ae
@@ -31,7 +31,7 @@ conda activate aem
 #python run_chain_statset_singles.py 1 12
 #python run_chain_mock.py ../chains/configs/chains_wp80_xi_xi2_upf_mcf_uchuu_wpmaxscale6.cfg
 #python run_chain_mock.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_uchuu_Msatmocks_wpmaxscale6.cfg
-python run_chain_mock.py ../chains/configs/chains_wp_xi_upf_mcf_uchuu_Msatmocks_covglamsmooth_boundsingle_uchuunclosest2000.cfg
+python run_chain_mock.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_uchuu_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle_uchuuchi2nclosest2000.cfg
 #mprof run -C python run_chain.py ../chains/configs/chains_wp_c1h12_covsg1_nthreads12.cfg
 #python -m memory_profiler run_chain.py ../chains/configs/chains_wp_xi_upf_mcf_c1h12_covsg1.cfg
 #mprof run -C python run_chain.py ../chains/configs/chains_wp_xi_upf_mcf_xi2_c1h12_covsg1.cfg

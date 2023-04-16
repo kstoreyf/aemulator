@@ -7,8 +7,8 @@ import utils
 
 def main():
     #run_scale_dicts()
-    run_single()
-
+    #run_single()
+    run_scale_dicts_addin()
 
 def run_single():
     results_dict_dir = '../data_products/results_dicts'
@@ -51,6 +51,22 @@ def run_scale_dicts():
     #stat_strs_scale = np.concatenate((stat_strs_single, ['wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']))
     extra_tag = '_upfmatch'
     #extra_tag = ''
+    min_scales = np.arange(0,9)
+    fn_results_dict_minscales = f'{results_dict_dir}/results_dict_minscales{extra_tag}.npy'
+    build_dict_scales(stat_strs_scale, id_pairs, '_minscale', fn_results_dict_minscales, min_scales)
+
+    max_scales = np.arange(0,9)
+    fn_results_dict_maxscales = f'{results_dict_dir}/results_dict_maxscales{extra_tag}.npy'
+    build_dict_scales(stat_strs_scale, id_pairs, '_maxscale', fn_results_dict_maxscales, max_scales)
+
+
+def run_scale_dicts_addin():
+
+    results_dict_dir = '../data_products/results_dicts'
+    id_pairs = np.loadtxt('../tables/id_pairs_recovery_test_70.txt', delimiter=',', dtype=np.int)
+
+    stat_strs_scale = ['wp', 'wp_xi', 'wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
+    extra_tag = '_upfmatch_addin'
     min_scales = np.arange(0,9)
     fn_results_dict_minscales = f'{results_dict_dir}/results_dict_minscales{extra_tag}.npy'
     build_dict_scales(stat_strs_scale, id_pairs, '_minscale', fn_results_dict_minscales, min_scales)

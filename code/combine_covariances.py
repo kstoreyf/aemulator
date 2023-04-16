@@ -16,17 +16,22 @@ def main():
     run(mock_tag_cov, stat_str, mode)
 
 
-def run(mock_tag_cov, stat_str, mode, cov_tag_extra=''):
+def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
 
     mock_name_glam = 'glam'
     cov_dir = '../covariances'
+    comb_tag = '_smooth'
+    if inflate_upf_err:
+        inflate_factor = 3
+        comb_tag += f'_inflateupferr{inflate_factor}nox'
+
     if mode=='glam_for_uchuu':
-        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_uchuu{mock_name_glam}_smooth_{stat_str}.dat"
+        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_uchuu{mock_name_glam}{comb_tag}_{stat_str}.dat"
     elif mode=='glam_for_aemulus':
         cov_glam_fn = f'{cov_dir}/cov_{mock_name_glam}_{stat_str}.dat'
-        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_{mock_name_glam}_{stat_str}.dat"
+        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_{mock_name_glam}{comb_tag}_{stat_str}.dat"
     elif mode=='aemulus_for_uchuu':
-        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_uchuu_smooth_{stat_str}.dat"
+        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_uchuu{comb_tag}_{stat_str}.dat"
 
     if 'glam' in mode:
         cov_glam_fn = f'{cov_dir}/cov_{mock_name_glam}_{stat_str}.dat'
@@ -37,12 +42,12 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra=''):
     cov_emuperf_fn = f'{cov_dir}/cov_emuperf{mock_tag_cov}{cov_tag_extra}_{stat_str}_hod3_test0.dat'
 
     # TODO: check if i want to be using smoothgauss here! wasnt before, bc only smoothed after glam failed
-    cov_smooth_emuperf_fn = f'{cov_dir}/cov_smoothgauss_emuperf{mock_tag_cov}{cov_tag_extra}_{stat_str}_hod3_test0.dat'
+    #cov_smooth_emuperf_fn = f'{cov_dir}/cov_smoothgauss_emuperf{mock_tag_cov}{cov_tag_extra}_{stat_str}_hod3_test0.dat'
     
     # load covs
     cov_aemulus = np.loadtxt(cov_aemulus_fn)
     cov_emuperf = np.loadtxt(cov_emuperf_fn)
-    cov_smooth_emuperf = np.loadtxt(cov_smooth_emuperf_fn)
+    #cov_smooth_emuperf = np.loadtxt(cov_smooth_emuperf_fn)
     
     # rescale aemulus cov bc tested emu on mean of 5 boxes
     cov_aemulus_5box = cov_aemulus*(1/5)
@@ -53,40 +58,58 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra=''):
     L_aemulus = 1050.
     if mode=='glam_for_uchuu':
         # scale glam to uchuu, for recovery on uchuu
-        cov_glam_scaled = cov_glam*(L_glam/L_uchuu)**3
+        cov_data = cov_glam*(L_glam/L_uchuu)**3
         #cov_emu = cov_smooth_emuperf - cov_aemulus_5box
         cov_emu = cov_emuperf - cov_aemulus_5box
-        cov_combined = cov_emu + cov_glam_scaled
-        # now we smooth
-        statistics = stat_str.split('_')
-        cov_combined = csc.smooth_cov_gaussian(cov_combined, statistics, nbins=9, width=1)
+        cov_combined = cov_emu + cov_data
 
     elif mode=='glam_for_aemulus': 
         # below is for using the glam covmat for recovery on aemulus
         cov_glam_scaled = cov_glam*(1/5)*(L_glam/L_aemulus)**3
-        cov_aemulus_5box = cov_aemulus*(1/5)
+        cov_data = cov_aemulus_5box
     
         # combine
         # note: im not sure why i considered glam to be the covmat to subtract off, vs add on;
         # i think it makes sense, bc we were trying to use it for getting a better emu covmat 
         # that we could then apply to any data. but in uchuu case, it's opposite i think
-        cov_emu = cov_smooth_emuperf - cov_glam_scaled
-        cov_combined = cov_emu + cov_aemulus_5box
+        cov_emu = cov_emuperf - cov_glam_scaled
 
     elif mode=='aemulus_for_uchuu':
         # use raw emuperf here, then we'll smooth later
         cov_emu = cov_emuperf - cov_aemulus_5box
 
         # L_aemulus/L_uchuu because uchuu is larger volume so should have smaller cov
-        cov_uchuu = cov_aemulus_5box*(L_aemulus/L_uchuu)**3
-        cov_combined = cov_emu + cov_uchuu 
-        # now we smooth
-        statistics = stat_str.split('_')
-        cov_combined = csc.smooth_cov_gaussian(cov_combined, statistics, nbins=9, width=1)
+        cov_data = cov_aemulus_5box*(L_aemulus/L_uchuu)**3
+        cov_combined = cov_emu + cov_data 
 
     else:
         print("Mode not recognized!")
     
+    statistics = stat_str.split('_')
+    if inflate_upf_err:
+        print("Inflating upf error")
+        nbins = 9
+        i_upf = statistics.index('upf')
+        i_start = i_upf*nbins 
+        i_end = i_start + nbins
+        print(statistics)
+        print(i_start, i_end)
+        print(cov_data[i_start:i_end, i_start:i_end])
+        upf_mask = np.full(cov_data.shape, False)
+        # these two lines also inflate all cross terms
+        #upf_mask[i_start:i_end,:] = True
+        #upf_mask[:,i_start:i_end] = True 
+        # this line does just the upf-upf square ("nox")
+        upf_mask[i_start:i_end,i_start:i_end] = True
+        # this does just diag 
+        # for i in range(i_start, i_end):
+        #     upf_mask[i,i] = True
+        cov_data[upf_mask] *= inflate_factor**2 #because we're scaling the variances
+        print(cov_data[i_start:i_end, i_start:i_end])
+
+    cov_combined = cov_emu + cov_data
+    cov_combined = csc.smooth_cov_gaussian(cov_combined, statistics, nbins=9, width=1)
+
     # save
     np.savetxt(cov_combined_fn, cov_combined)
     print("Saved to", cov_combined_fn)

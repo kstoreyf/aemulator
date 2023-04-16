@@ -5,16 +5,19 @@ import utils
 
 
 def main():
-    train_tag_extra = '_errstdev_Msatmocks_uchuunclosest2000'
-    statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
+    train_tag_extra = '_errstdev_Msatmocks_uchuuchi2nclosest2000'
+    #statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
+    #statistics = ['wp', 'xi', 'xi2']
+    #statistics = ['upf', 'mcf']
+    statistics = ['xi2']
     scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
 
     for i in range(len(statistics)):    
         run(statistics[i], scalings[i], train_tag_extra=train_tag_extra,
-            train_mode=False, test_mode=True)
+            train_mode=True, test_mode=True)
 
 
-def run(statistic, scaling, emu_name='George', max_iter=100,
+def run(statistic, scaling, emu_name='George', max_iter=1000,
         mock_tag_train='_aemulus_Msatmocks_train', mock_tag_test='_aemulus_Msatmocks_test',
         train_tag_extra='', train_mode=True, test_mode=True):
 

@@ -1,8 +1,10 @@
 import h5py
+import matplotlib
 import numpy as np
 import pickle
 import os
 from collections import defaultdict
+from matplotlib import pyplot as plt
 
 from dynesty import utils as dyfunc
 
@@ -88,8 +90,10 @@ def load_cosmo_params_mock(mock_name):
 def load_hod_params_mock(mock_name):
     hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
     if mock_name=='uchuu':
-        # made using SHAM!
+        # made using SHAM! but we do know gamma_f=1
         hod_params = [float("NaN")]*len(hod_param_names)
+        idx_f = hod_params.index("f")
+        hod_params[idx_f] = 1.0
     return hod_param_names, hod_params
 
 def load_cosmo_params(mock_name):
@@ -291,25 +295,44 @@ def construct_results_dict(chaintag):
     truths = fw.attrs['true_values']
     fw.close()
     
-    chain_results_dir = '/export/sirocco1/ksf293/aemulator/chains/results'
+    #chain_results_dir = '/export/sirocco1/ksf293/aemulator/chains/results'
+    chain_results_dir = '/mount/sirocco1/ksf293/aemulator/chains/results'
     chain_results_fn = f'{chain_results_dir}/results_{chaintag}.pkl'
     with open(chain_results_fn, 'rb') as pf:
         #print(chain_results_fn, pf)
         res = pickle.load(pf)
         samples, weights = res.samples, np.exp(res.logwt - res.logz[-1])
         samples_equal = dyfunc.resample_equal(samples, weights)
-        
+
     # add fsigma8
     idx_Omega_m = np.where(param_names=='Omega_m')[0][0]
     idx_gamma_f = np.where(param_names=='f')[0][0]
     idx_sigma_8 = np.where(param_names=='sigma_8')[0][0]
     f = samples_equal[:,idx_Omega_m]**0.55
+    print(get_uncertainties(f))
+    print(get_uncertainties(f*samples_equal[:,idx_sigma_8]))
     fsigma8 = f*samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]
+    print(get_uncertainties(f*samples_equal[:,idx_gamma_f]))
+    print(get_uncertainties(samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
+    print(get_uncertainties(f*samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
     samples_equal = np.hstack((samples_equal, np.atleast_2d(fsigma8).T))
     param_names = np.append(param_names, 'fsigma8')
     fsigma8_true = truths[idx_Omega_m]**0.55 * truths[idx_gamma_f] * truths[idx_sigma_8]
     truths = np.append(truths, fsigma8_true)
-        
+    print()
+    print(get_uncertainties(samples_equal[:,idx_gamma_f]))
+    print(get_uncertainties(samples_equal[:,idx_sigma_8]))
+    print(get_uncertainties(samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
+
+    # trying this 
+    samples_f = samples[:,idx_Omega_m]**0.55
+    samples_fsigma8 = samples_f*samples[:,idx_gamma_f]*samples[:,idx_sigma_8]
+    # weights are not by parameter, just one for each point/sample, so 
+    # not sure if need to do anything to them?
+    fsigma8_equal = dyfunc.resample_equal(samples_fsigma8, weights)
+    print()
+    print(get_uncertainties(fsigma8_equal))
+
     means = get_means(samples_equal)
     medians = get_medians(samples_equal)
     uncertainties = get_uncertainties(samples_equal)
@@ -324,6 +347,7 @@ def construct_results_dict(chaintag):
         sub_dict['truth'] = truths[j]
         result_dict_single[pn] = sub_dict
         
+    #return result_dict_single, param_names, samples_equal
     return result_dict_single
 
 # Intersection point for min and max scales plot
@@ -420,7 +444,7 @@ def load_statistics(statistic, result_dir_base, id_pairs):
     return r_arr, y_train_arr
 
 
-def load_id_pairs_train(mock_tag_train, train_tag):
+def load_id_pairs_train(mock_tag_train, train_tag=''):
     ## ID values (cosmo and hod numbers)
     if 'nclosest' in train_tag:
         for tag in train_tag.split('_'):
@@ -441,7 +465,7 @@ def load_id_pairs_train(mock_tag_train, train_tag):
     return id_pairs_train 
 
 
-def load_id_pairs_test(train_tag):
+def load_id_pairs_test(train_tag=''):
     ### ID values (cosmo and hod numbers)
     if 'nclosest' in train_tag:
         for tag in train_tag.split('_'):
@@ -451,35 +475,226 @@ def load_id_pairs_test(train_tag):
         fn_test = '../tables/id_pairs_test.txt'
     id_pairs_test = np.loadtxt(fn_test, delimiter=',', dtype=int)
     return id_pairs_test 
+    
+
+def get_chisqs(ys_to_compare, y_arr, variances):
+    # this works, checked - see https://stackoverflow.com/a/72299599
+    ys_to_compare_flat = np.hstack(ys_to_compare)
+    y_arr_flat = np.hstack(y_arr) 
+    chisqs = []
+    for j in range(len(y_arr_flat)):
+        chisqs.append( chi2(ys_to_compare_flat, y_arr_flat[j], variances) )
+    # i_min = np.argmin(chisqs)
+    # print(ys_to_compare_flat)
+    # print(y_arr_flat[i_min])
+    # print(variances)   
+    # print(chisqs[i_min])
+    return np.array(chisqs)
 
 
-def get_closest_models(statistics, y_vals, id_pairs, results_dir, n_closest=2000):
-    errs_all = []
-    for i, statistic in enumerate(statistics):
-        _, y_arr = load_statistics(statistic, results_dir, id_pairs)
-        errs = np.mean((y_arr-y_vals[i])/y_vals[i], axis=1)
-        errs_all.append(errs)
-    errs_all = np.array(errs_all).T
-    errs_sum = np.sum(errs_all, axis=1)
-
+def get_closest_models(ys_to_compare, y_arr, variances, n_closest=2000):
+    chisqs = get_chisqs(ys_to_compare, y_arr, variances)
     # https://stackoverflow.com/questions/34226400/find-the-index-of-the-k-smallest-values-of-a-numpy-array
-    idx = np.argpartition(errs_sum, n_closest)
+    idx = np.argpartition(chisqs, n_closest)
     idxs_closest = idx[:n_closest]
-    err_max_of_chosen = np.max(errs_sum[idxs_closest])
-    print(np.min(errs_sum), np.max(errs_sum), err_max_of_chosen)
-    return id_pairs[idxs_closest], idxs_closest, err_max_of_chosen
+    chisq_max_of_chosen = np.max(chisqs[idxs_closest])
+    print(np.min(chisqs), np.max(chisqs), chisq_max_of_chosen)
+    return idxs_closest, chisq_max_of_chosen
 
 
-def get_models_within_err(statistics, y_vals, id_pairs, results_dir, err):
-    errs_all = []
+def get_models_within_chi2(ys_to_compare, y_arr, variance_arr, chisq_thresh):
+    chisqs_mean = get_chisqs(ys_to_compare, y_arr, variance_arr)
+    idxs_within_err = np.where(chisqs_mean < chisq_thresh)[0]
+    return idxs_within_err
+
+
+def load_emus(chaintag):
+    
+    chain_fn = f'../chains/param_files/chain_params_{chaintag}.h5'
+    f = h5py.File(chain_fn, 'r')
+
+    statistics = f.attrs['statistics']
+    emu_names = f.attrs['emu_names']
+    scalings = f.attrs['scalings']
+    
+    n_stats = len(statistics)
+
+    # optional
+    if 'train_tags_extra' in f.attrs:
+        train_tags_extra = f.attrs['train_tags_extra']
+    else:
+        train_tags_extra = ['']*len(statistics)
+    
+    if 'mock_name_train' in f.attrs:
+        mock_name_train = f.attrs['mock_name_train']
+    else:
+        mock_name_train = 'aemulus_train'
+
+    if 'mock_name_test' in f.attrs:
+        mock_name_test = f.attrs['mock_name_test']
+    else:
+        mock_name_test = 'aemulus_test'
+        
+    if 'bins' in f.keys():
+        bins = [list(b_arr) for b_arr in f['bins']]
+    #elif not np.isnan(f.attrs['bins']):
+    #    bins = f.attrs['bins']
+    else:
+        bins = [np.arange(9) for _ in range(n_stats)]
+    print(bins)
+    f.close()
+        
+    emus = [None]*n_stats
+    mock_tag_train = '_'+mock_name_train
     for i, statistic in enumerate(statistics):
-        _, y_arr = load_statistics(statistic, results_dir, id_pairs)
-        errs = np.mean((y_arr-y_vals[i])/y_vals[i], axis=1)
-        errs_all.append(errs)
-    errs_all = np.array(errs_all).T
-    errs_sum = np.sum(errs_all, axis=1)
+    
+        # load emu
+        Emu = get_emu(emu_names[i])
 
-    # https://stackoverflow.com/questions/34226400/find-the-index-of-the-k-smallest-values-of-a-numpy-array
-    idxs_within_err = np.where(errs_sum < err)[0]
-    return id_pairs[idxs_within_err], idxs_within_err
+        train_tag = f'_{emu_names[i]}_{scalings[i]}{train_tags_extra[i]}'
+        model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
+        scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
+        scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
 
+        err_fn = f"../covariances/stdev_{mock_name_test}_{statistic}_hod3_test0.dat"
+
+        emu = Emu(statistic, scalings[i], model_fn, scaler_x_fn, scaler_y_fn, err_fn,
+                  bins=bins[i], predict_mode=True, mock_tag_train=mock_tag_train)
+        emu.load_model()
+        emus[i] = emu
+    
+    emu_dict = dict(zip(statistics, emus))
+    return emu_dict
+
+
+def get_best_fit(chaintag, emu_dict, data_tag_aem=None, return_pred_on_true_params=False):
+    chain_results_dir = '/export/sirocco1/ksf293/aemulator/chains/results'
+    chain_results_fn = f'{chain_results_dir}/results_{chaintag}.pkl'
+    with open(chain_results_fn, 'rb') as pf:
+        res = pickle.load(pf)
+        samples, weights = res.samples, np.exp(res.logwt - res.logz[-1])
+        samples_equal = dyfunc.resample_equal(samples, weights)
+
+    # getting really bad results with mode! idk why ??
+    #params_best = scipy.stats.mode(samples_equal, axis=0)[0][0] #0 is mode, 1 is counts. 2nd zero is array
+    params_best = get_medians(samples_equal)
+    
+    chain_fn = f'../chains/param_files/chain_params_{chaintag}.h5'
+    f = h5py.File(chain_fn, 'r')
+    param_names = f.attrs['param_names_vary']
+    params_true = f.attrs['true_values']
+    
+    param_dict = dict(zip(param_names, params_best)) 
+    print(param_names)
+    print(params_best)
+
+    statistics = f.attrs['statistics']
+    if 'data_name' in f.attrs:
+        data_name = f.attrs['data_name']
+    else:
+        data_name = 'aemulus_test'
+    f.close()
+    rs = []
+    ys_true = []
+    ys_pred_best = []
+    ys_pred_on_truth = []
+    for i, statistic in enumerate(statistics):
+    
+        emu = emu_dict[statistic]
+        y_pred = emu.predict(param_dict)
+        ys_pred_best.append(y_pred)
+
+        if 'aemulus' in data_name:
+            result_dir=f"/home/users/ksf293/clust/results_{data_name}_mean/results_{statistic}"
+            fn_stat=f"{result_dir}/{statistic}_{data_tag_aem}_mean.dat"
+        else: 
+            result_dir=f"/home/users/ksf293/clust/results_{data_name}/results_{statistic}"
+            fn_stat=f"{result_dir}/{statistic}_{data_name}.dat"
+            
+        r, y_true = np.loadtxt(fn_stat, delimiter=',', unpack=True)
+        rs.append(r)
+        ys_true.append(y_true)
+        # can only do this for aem bc uses same hod params as emu
+        if 'aemulus' in data_name and return_pred_on_true_params:
+            param_dict_true = dict(zip(param_names, params_true)) 
+            y_pred_on_truth = emu.predict(param_dict_true)
+            ys_pred_on_truth.append(y_pred_on_truth)
+
+    if return_pred_on_true_params:
+        return rs, ys_true, ys_pred_best, ys_pred_on_truth
+    else:
+        return rs, ys_true, ys_pred_best
+
+
+def chi2(y_true, y_pred, variances):
+    assert len(y_true)==len(y_pred), 'y_true and y_pred must be same length!'
+    assert len(y_true)==len(variances), 'y_true and variances must be same length!'
+    chisq = np.sum((y_pred-y_true)**2/variances)
+    return chisq
+
+
+def reduced_chi2(y_true, y_pred, variances, deg_freedom):
+    chisq = chi2(y_true, y_pred, variances)
+    return chisq/deg_freedom
+
+
+def get_deg_of_freedom(chaintag):
+    chain_fn = f'../chains/param_files/chain_params_{chaintag}.h5'
+    f = h5py.File(chain_fn, 'r')
+    # The degree of freedom, nu = n-m,
+    # equals the number of observations n minus the number of fitted parameters m.
+    m_params = len(f.attrs['param_names_vary']) - len(f.attrs['fixed_param_names'])
+    bin_arr = np.vstack(f['bins'])
+    n_obs = len(bin_arr.flatten())
+    return n_obs - m_params
+
+
+def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
+    '''
+    Function to offset the "center" of a colormap. Useful for
+    data with a negative min and positive max and you want the
+    middle of the colormap's dynamic range to be at zero.
+    Input
+    -----
+      cmap : The matplotlib colormap to be altered
+      start : Offset from lowest point in the colormap's range.
+          Defaults to 0.0 (no lower offset). Should be between
+          0.0 and `midpoint`.
+      midpoint : The new center of the colormap. Defaults to 
+          0.5 (no shift). Should be between 0.0 and 1.0. In
+          general, this should be  1 - vmax / (vmax + abs(vmin))
+          For example if your data range from -15.0 to +5.0 and
+          you want the center of the colormap at 0.0, `midpoint`
+          should be set to  1 - 5/(5 + 15)) or 0.75
+      stop : Offset from highest point in the colormap's range.
+          Defaults to 1.0 (no upper offset). Should be between
+          `midpoint` and 1.0.
+    '''
+    cdict = {
+        'red': [],
+        'green': [],
+        'blue': [],
+        'alpha': []
+    }
+
+    # regular index to compute the colors
+    reg_index = np.linspace(start, stop, 257)
+
+    # shifted index to match the data
+    shift_index = np.hstack([
+        np.linspace(0.0, midpoint, 128, endpoint=False), 
+        np.linspace(midpoint, 1.0, 129, endpoint=True)
+    ])
+
+    for ri, si in zip(reg_index, shift_index):
+        r, g, b, a = cmap(ri)
+
+        cdict['red'].append((si, r, r))
+        cdict['green'].append((si, g, g))
+        cdict['blue'].append((si, b, b))
+        cdict['alpha'].append((si, a, a))
+
+    newcmap = matplotlib.colors.LinearSegmentedColormap(name, cdict)
+    plt.register_cmap(cmap=newcmap)
+
+    return 

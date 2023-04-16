@@ -5,7 +5,7 @@ import glob
 def main():
 
     #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
-    stat_strs = ['wp_xi_mcf']
+    stat_strs = [ 'wp_xi_xi2_mcf']
     mock_name = 'glam'
     mock_tag = '_'+mock_name
     N_mocks = 986

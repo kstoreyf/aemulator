@@ -285,7 +285,8 @@ def plot_accuracy_figure(statistics, train_tags, mock_tag_test='_aemulus_test'):
 
 
 
-def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_labels=[], params_toplot=None, colors=None,
+def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_labels=[],
+                  params_toplot=None, colors=None,
                   legend_loc='upper center', legend_fontsize=20,
                   vertical_markers=None, vertical_marker_color='grey', alpha=0.4):
     # Make dict of bounds for plot ranges
@@ -630,9 +631,13 @@ def plot_uncertainty_scales_bar_chart(ax, results_dicts, prior_dict, param_toplo
 def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplot, stat_strs_toplot, 
                                  id_pair, labels, colors, 
                                  rotation=0, nrows=2, ncols=2, lss=None, lws=None,
-                                 comparison_dicts=None, xlabel=None, show_top_axis=True):
+                                 comparison_dicts=None, xlabel=None, ylabel=r"1/$\sigma$", 
+                                 show_top_axis=True, legend_top=False):
+    assert nrows * ncols == len(params_toplot), 'Passed incorrect number of rows and columns!'
     subfig_width, subfig_height = (6,5)
     fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
+    axarr = np.atleast_2d(axarr)
+
     if show_top_axis:
         plt.subplots_adjust(hspace=0.35, wspace=0.15)
     else:
@@ -650,13 +655,22 @@ def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplo
                                   lss=lss, lws=lws, comparison_dicts=comparison_dicts, xlabel=xlabel,
                                   show_top_axis=show_top_axis)
             
-            axarr[i,0].set_ylabel(r"1/$\sigma$") # set ylabel on 1st column only (order [row, col])
+            axarr[i,0].set_ylabel(ylabel) # set ylabel on 1st column only (order [row, col])
             
             count += 1
             
     handles, labels = axarr[0,0].get_legend_handles_labels()
     #plt.legend(handles, labels, loc=(1.1,0.8)) # right side legend
-    plt.legend(handles, labels, loc='upper center', bbox_to_anchor=(-0.08,2.95), ncol=2)
+    if len(params_toplot)==4 and legend_top:
+        plt.legend(handles, labels, loc='upper center', bbox_to_anchor=(-0.08,2.95), ncol=2)
+    if len(params_toplot)==4 and not legend_top:
+        plt.legend(handles, labels, bbox_to_anchor=(1.1,1.5))
+    elif len(params_toplot)==2 and params_toplot[-1]=='fsigma8':
+        axarr[0,-1].legend(handles, labels, loc=(0.03,0.12))
+    elif len(params_toplot)==1 and params_toplot[0]=='sigma_8':
+        axarr[0,-1].legend(handles, labels, loc=(0.37,0.71))
+    else:
+        plt.legend(handles, labels, loc='upper center')
 
 
 def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, stat_strs_toplot, id_pairs, labels, colors, 
@@ -744,3 +758,28 @@ def plot_statistic(statistic, x_vals, y_vals):
     plt.yscale(scale_dict[statistic][1])
 
 
+def plot_statistics_compare(statistic, r, y_true, y_arr, colors, labels):
+    fig, (ax0, ax1) = plt.subplots(2, 1, figsize=(8,8), sharex=True)
+    plt.subplots_adjust(hspace=0.03)
+    
+    multiplier = 1.0
+    ylabel = stat_labels[statistic]
+    if statistic=='xi2':
+        multiplier = r**2
+        #ax.set_ylim(-3,3)
+        ylabel = r'$s^2$' + ylabel
+
+    ax0.plot(r, multiplier*y_true, color='k', alpha=1, lw=2, label='true')
+    for i in range(len(y_arr)):
+        ax0.plot(r, multiplier*y_arr[i], color=colors[i], alpha=1, lw=2, label=labels[i], ls='--')
+        ax1.plot(r, multiplier*(y_arr[i]-y_true)/y_true, color=colors[i], alpha=1, lw=2, ls='--', label=labels[i])
+    ax1.axhline(0.0, color='k', lw=2)
+    
+    ax0.set_xscale(scale_dict[statistic][0])
+    ax1.set_xscale(scale_dict[statistic][0])
+    ax0.set_yscale(scale_dict[statistic][1])
+    
+    ax1.set_xlabel(r_labels[statistic])
+    ax0.set_ylabel(ylabel)
+    ax1.set_ylabel('fractional error')
+    ax0.legend()
