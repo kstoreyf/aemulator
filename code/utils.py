@@ -117,6 +117,10 @@ def load_hod_params(mock_name):
         hod_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/test_mocks/HOD_test_np11_n5000_new_f_env_Msat.dat'
     elif mock_name=='aemulus_Msatmocks_train':
         hod_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/training_mocks/HOD_design_np11_n5000_new_f_env_Msat.dat'
+    elif mock_name=='aemulus_fmaxmocks_test':
+        hod_fn = '/mount/sirocco1/zz681/emulator/CMASSLOWZ_Msat_fmax_new/test_mocks/HOD_test_np11_n5000_new_f_env_Msat_fmax_new.dat'
+    elif mock_name=='aemulus_fmaxmocks_train':
+        hod_fn = '/mount/sirocco1/zz681/emulator/CMASSLOWZ_Msat_fmax_new/training_mocks/HOD_design_np11_n5000_new_f_env_Msat_fmax_new.dat'
     else: 
         raise ValueError(f'Mock name {mock_name} not recognized!')
     hod_params = np.loadtxt(hod_fn)
@@ -509,6 +513,8 @@ def get_models_within_chi2(ys_to_compare, y_arr, variance_arr, chisq_thresh):
 
 
 def load_emus(chaintag):
+
+    base_dir = '/export/sirocco1/ksf293/aemulator'
     
     chain_fn = f'../chains/param_files/chain_params_{chaintag}.h5'
     f = h5py.File(chain_fn, 'r')
@@ -552,9 +558,9 @@ def load_emus(chaintag):
         Emu = get_emu(emu_names[i])
 
         train_tag = f'_{emu_names[i]}_{scalings[i]}{train_tags_extra[i]}'
-        model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
-        scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
-        scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
+        model_fn = f'{base_dir}/models/model_{statistic}{train_tag}' #emu will add proper file ending
+        scaler_x_fn = f'{base_dir}/models/scaler_x_{statistic}{train_tag}.joblib'
+        scaler_y_fn = f'{base_dir}/models/scaler_y_{statistic}{train_tag}.joblib'
 
         err_fn = f"../covariances/stdev_{mock_name_test}_{statistic}_hod3_test0.dat"
 

@@ -5,8 +5,9 @@ import utils
 
 
 def main():
-    mock_tag = '_aemulus_Msatmocks_test'
-    stat_str = 'mcf'
+    #mock_tag = '_aemulus_Msatmocks_test'
+    mock_tag = '_aemulus_fmaxmocks_test'
+    stat_str = 'wp'
     run(mock_tag, stat_str)
 
 

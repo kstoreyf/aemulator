@@ -338,6 +338,7 @@ def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_lab
 
     marker_args = {'color': vertical_marker_color}
 
+
     g = getdist.plots.get_subplot_plotter()
     g.settings.alpha_filled_add=alpha
     g.settings.figure_legend_frame = False
@@ -346,8 +347,10 @@ def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_lab
     g.settings.axes_fontsize = 16
     g.settings.axis_marker_lw = 1.0
     g.settings.axis_marker_color = 'dimgrey'
+    fig = plt.gcf()
     g.triangle_plot(sample_arr, filled=True, contour_colors=colors, names=params_toplot,
-                   legend_labels=legend_labels, markers=vertical_markers_toplot, title_limit=0, legend_loc=legend_loc,
+                   legend_labels=legend_labels, markers=vertical_markers_toplot, 
+                   title_limit=0, legend_loc=legend_loc,
                     marker_args=marker_args, axis_marker_color='red')
     return g
 

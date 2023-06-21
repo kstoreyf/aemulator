@@ -2,8 +2,9 @@
 ##PBS -N train_test_emu_wp80_George_log_errstdev
 ##PBS -N train_test_emu_xi2_George_xrsqmean_errstdev_Msatmocks_kM32ExpConst2
 ##PBS -N train_test_emu_mcf_George_errstdev_Msatmocks_uchuunclosest2000
-#PBS -N build_result_dicts
+##PBS -N build_result_dicts
 ##PBS -N train_test_emu_xi2_George_errstdev_Msatmocks_uchuuchi2nclosest2000
+#PBS -N train_test_emu_wp_George_errstdev_fmaxmocks
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=9
 #PBS -m ae
@@ -17,7 +18,7 @@ echo 'starting'
 echo -n 'Job is running on node '; cat $PBS_NODEFILE
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate aem
-#python run_emulator.py
-python build_result_dicts.py
+python run_emulator.py
+#python build_result_dicts.py
 echo 'done'
 
