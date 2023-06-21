@@ -30,7 +30,7 @@ class Emulator(object):
     def __init__(self, statistic, scaling, model_fn, scaler_x_fn, scaler_y_fn,
                  err_fn, bins=list(range(9)), 
                  train_mode=False, test_mode=False, predict_mode=False,
-                 mock_tag_train='_aemulus_fmaxmocks_train', mock_tag_test='_aemulus_fmaxmocks_test'):
+                 mock_name_train='aemulus_fmaxmocks_train', mock_name_test='aemulus_fmaxmocks_test'):
         assert np.any(np.array([train_mode, test_mode, predict_mode])), "At least one mode must be True!"
         self.statistic = statistic
         self.model_fn = model_fn
@@ -43,17 +43,15 @@ class Emulator(object):
         self.n_bins_tot = 9
         if self.n_bins < self.n_bins_tot:
             assert "George" in model_fn, "Using fewer than all the bins only implemented for George emu!"
-        self.mock_tag_train = mock_tag_train
-        print(self.mock_tag_train)
-        self.mock_tag_test = mock_tag_test
-        assert self.mock_tag_train in ['_aemulus_train', '_aemulus_Msatmocks_train', '_aemulus_fmaxmocks_train'], 'Training mock tag not recognized!'
-        assert self.mock_tag_test in ['_aemulus_test', '_aemulus_Msatmocks_test', '_aemulus_fmaxmocks_test'], 'Testing mock tag not recognized!'
+        self.mock_name_train = mock_name_train
+        self.mock_name_test = mock_name_test
+        # assert self.mock_tag_train in ['_aemulus_train', '_aemulus_Msatmocks_train', '_aemulus_fmaxmocks_train'], 'Training mock tag not recognized!'
+        # assert self.mock_tag_test in ['_aemulus_test', '_aemulus_Msatmocks_test', '_aemulus_fmaxmocks_test'], 'Testing mock tag not recognized!'
 
         self.set_training_data() # always need training data, for error (and GP conditioning)
         self.load_y_error()
         self.scale_y_error(scaling)
 
-        self.mock_tag_test = mock_tag_test
         # for training emulator initially
         if train_mode:
             self.construct_scalers(scaling)
@@ -81,31 +79,17 @@ class Emulator(object):
         
         ### ID values (cosmo and hod numbers)
         # ok to pass model_fn instead of train tag bc the former contains the latter
-        self.id_pairs_train = utils.load_id_pairs_train(self.mock_tag_train, self.model_fn)
+        self.id_pairs_train = utils.load_id_pairs_train(self.mock_name_train, self.model_fn)
         self.n_train = len(self.id_pairs_train)
         print("N train:", self.n_train)
         ### x values (data, cosmo and hod values)
 
-        cosmos_train_fn = '../tables/cosmology_camb_full.dat'
-        cosmos_train = np.loadtxt(cosmos_train_fn)
+        # cosmos_train_fn = '../tables/cosmology_camb_full.dat'
+        # cosmos_train = np.loadtxt(cosmos_train_fn)
+        _, cosmos_train = utils.load_cosmo_params(self.mock_name_train)
         n_cosmo_params = cosmos_train.shape[1]
 
-        # original emus
-        if self.mock_tag_train=='_aemulus_train':
-            hods_train_fn = '../tables/HOD_design_np11_n5000_new_f_env.dat'
-            base_dir = '/home/users/ksf293/clust'
-        elif self.mock_tag_train=='_aemulus_Msatmocks_train':
-            # updated Msat 
-            hods_train_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/training_mocks/HOD_design_np11_n5000_new_f_env_Msat.dat'
-            base_dir = '/home/users/ksf293/clust'
-        elif self.mock_tag_train=='_aemulus_fmaxmocks_train':
-            hods_train_fn = '/mount/sirocco1/zz681/emulator/CMASSLOWZ_Msat_fmax_new/training_mocks/HOD_design_np11_n5000_new_f_env_Msat_fmax_new.dat'
-            base_dir = '/mount/sirocco1/ksf293/clust'
-
-        hods_train = np.loadtxt(hods_train_fn)
-        # Convert these columns (0: M_sat, 2: M_cut) to log to reduce range
-        hods_train[:, 0] = np.log10(hods_train[:, 0])
-        hods_train[:, 2] = np.log10(hods_train[:, 2])
+        _, hods_train = utils.load_hod_params(self.mock_name_train)
         n_hod_params = hods_train.shape[1]
 
         self.n_params = n_cosmo_params + n_hod_params
@@ -117,19 +101,21 @@ class Emulator(object):
 
         ### y values (labels, value of statistics in each bin)
 
-        self.y_train = np.empty((self.n_train, self.n_bins_tot))
-        y_train_dir = f'{base_dir}/results{self.mock_tag_train}'
-        for i in range(self.n_train):
-            id_cosmo, id_hod = self.id_pairs_train[i]
-            y_train_fn = f'{y_train_dir}/results_{self.statistic}/{self.statistic}_cosmo_{id_cosmo}_HOD_{id_hod}_test_0.dat'
-            r_vals, y = np.loadtxt(y_train_fn, delimiter=',', unpack=True)
-            if id_cosmo==12 and id_hod==1296:
-                print("Bad ID:", y)
-            self.y_train[i,:] = y
-        # all r_vals are the same so just save the last one
-        self.r_vals = r_vals
+        # self.y_train = np.empty((self.n_train, self.n_bins_tot))
+        # y_train_dir = f'{base_dir}/results{self.mock_tag_train}'
+        # for i in range(self.n_train):
+        #     id_cosmo, id_hod = self.id_pairs_train[i]
+        #     y_train_fn = f'{y_train_dir}/results_{self.statistic}/{self.statistic}_cosmo_{id_cosmo}_HOD_{id_hod}_test_0.dat'
+        #     r_vals, y = np.loadtxt(y_train_fn, delimiter=',', unpack=True)
+        #     if id_cosmo==12 and id_hod==1296:
+        #         print("Bad ID:", y)
+        #     self.y_train[i,:] = y
+        r_arr, self.y_train = utils.load_statistics(self.statistic, self.mock_name_train, self.id_pairs_train)
 
-        #FOR TESTING PURPOSES ONLY
+        # all r_vals are the same so just save the first one
+        self.r_vals = r_arr[0]
+
+        # FOR TESTING PURPOSES ONLY
         # print("TINY TRAINING SET")
         # print(self.x_train.shape)
         # self.n_train = 10
@@ -142,33 +128,35 @@ class Emulator(object):
 
         ### ID values (cosmo and hod numbers)
 
-        self.id_pairs_test = utils.load_id_pairs_test(self.model_fn)
+        self.id_pairs_test = utils.load_id_pairs_test()
         self.n_test = self.id_pairs_test.shape[0]
         print("N test ids:", self.n_test)
         ### x values (data, cosmo and hod values)
 
-        cosmos_test_fn = '../tables/cosmology_camb_test_box_full.dat'
-        cosmos_test = np.loadtxt(cosmos_test_fn)
+        # cosmos_test_fn = '../tables/cosmology_camb_test_box_full.dat'
+        # cosmos_test = np.loadtxt(cosmos_test_fn)
+        _, cosmos_test = utils.load_cosmo_params(self.mock_name_test)
         n_cosmo_params = cosmos_test.shape[1]
 
-        
-        # original
-        if self.mock_tag_test=='_aemulus_test':
-            hods_test_fn = '../tables/HOD_test_np11_n1000_new_f_env.dat'
-            base_dir = '/home/users/ksf293/clust'
-        elif self.mock_tag_test=='_aemulus_Msatmocks_test':
-            # updated msat
-            hods_test_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/test_mocks/HOD_test_np11_n5000_new_f_env_Msat.dat'
-            base_dir = '/home/users/ksf293/clust'
-        elif self.mock_tag_test=='_aemulus_fmaxmocks_test':
-            hods_test_fn = '/mount/sirocco1/zz681/emulator/CMASSLOWZ_Msat_fmax_new/test_mocks/HOD_test_np11_n5000_new_f_env_Msat_fmax_new.dat'
-            base_dir = '/mount/sirocco1/ksf293/clust'
-
-        hods_test = np.loadtxt(hods_test_fn)
-        # Convert these columns (0: M_sat, 2: M_cut) to log to reduce range
-        hods_test[:, 0] = np.log10(hods_test[:, 0])
-        hods_test[:, 2] = np.log10(hods_test[:, 2])
+        _, hods_test = utils.load_hod_params(self.mock_name_test)
         n_hod_params = hods_test.shape[1]
+        # original
+        # if self.mock_tag_test=='_aemulus_test':
+        #     hods_test_fn = '../tables/HOD_test_np11_n1000_new_f_env.dat'
+        #     base_dir = '/home/users/ksf293/clust'
+        # elif self.mock_tag_test=='_aemulus_Msatmocks_test':
+        #     # updated msat
+        #     hods_test_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/test_mocks/HOD_test_np11_n5000_new_f_env_Msat.dat'
+        #     base_dir = '/home/users/ksf293/clust'
+        # elif self.mock_tag_test=='_aemulus_fmaxmocks_test':
+        #     hods_test_fn = '/mount/sirocco1/zz681/emulator/CMASSLOWZ_Msat_fmax_new/test_mocks/HOD_test_np11_n5000_new_f_env_Msat_fmax_new.dat'
+        #     base_dir = '/mount/sirocco1/ksf293/clust'
+
+        # hods_test = np.loadtxt(hods_test_fn)
+        # # Convert these columns (0: M_sat, 2: M_cut) to log to reduce range
+        # hods_test[:, 0] = np.log10(hods_test[:, 0])
+        # hods_test[:, 2] = np.log10(hods_test[:, 2])
+        # n_hod_params = hods_test.shape[1]
 
         self.n_params = n_cosmo_params + n_hod_params
 
@@ -180,13 +168,16 @@ class Emulator(object):
         ### y values (labels, value of statistics in each bin)
         # Note: here we are using the mean of 5 boxes with the same parameters
         self.n_bins_tot = 9
-        self.y_test = np.empty((self.n_test, self.n_bins_tot))
-        y_test_dir = f'{base_dir}/results{self.mock_tag_test}_mean'
-        for i in range(self.n_test):
-            id_cosmo, id_hod = self.id_pairs_test[i]
-            y_test_fn = f'{y_test_dir}/results_{self.statistic}/{self.statistic}_cosmo_{id_cosmo}_HOD_{id_hod}_mean.dat'
-            _, y = np.loadtxt(y_test_fn, delimiter=',', unpack=True)
-            self.y_test[i,:] = y
+        # self.y_test = np.empty((self.n_test, self.n_bins_tot))
+        # y_test_dir = f'{base_dir}/results{self.mock_tag_test}_mean'
+        # for i in range(self.n_test):
+        #     id_cosmo, id_hod = self.id_pairs_test[i]
+        #     y_test_fn = f'{y_test_dir}/results_{self.statistic}/{self.statistic}_cosmo_{id_cosmo}_HOD_{id_hod}_mean.dat'
+        #     _, y = np.loadtxt(y_test_fn, delimiter=',', unpack=True)
+        #     self.y_test[i,:] = y
+        mock_name_test_mean = f'{self.mock_name_test}_mean'
+        _, self.y_test = utils.load_statistics(self.statistic, mock_name_test_mean, self.id_pairs_test)
+
 
     def pow10(self, x):
         return np.power(10,x)

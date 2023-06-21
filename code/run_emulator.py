@@ -10,7 +10,7 @@ def main():
     #statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
     #statistics = ['wp', 'xi', 'xi2']
     #statistics = ['upf', 'mcf']
-    statistics = ['wp']
+    statistics = ['upf']
     scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
 
     for i in range(len(statistics)):    
@@ -19,7 +19,7 @@ def main():
 
 
 def run(statistic, scaling, emu_name='George', max_iter=1000,
-        mock_tag_train='_aemulus_fmaxmocks_train', mock_tag_test='_aemulus_fmaxmocks_test',
+        mock_name_train='aemulus_fmaxmocks_train', mock_name_test='aemulus_fmaxmocks_test',
         train_tag_extra='', train_mode=True, test_mode=True):
 
     #train_tag = f'_{emu_name}_{scaling}'
@@ -27,11 +27,12 @@ def run(statistic, scaling, emu_name='George', max_iter=1000,
     train_tag = f'_{emu_name}_{scaling}{train_tag_extra}'
 
     predictions_dir = f'../predictions/predictions_{statistic}{train_tag}'
-    model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
-    scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
-    scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
+    models_dir = '/mount/sirocco1/ksf293/aemulator/models'
+    model_fn = f'{models_dir}/model_{statistic}{train_tag}' #emu will add proper file ending
+    scaler_x_fn = f'{models_dir}/scaler_x_{statistic}{train_tag}.joblib'
+    scaler_y_fn = f'{models_dir}/scaler_y_{statistic}{train_tag}.joblib'
     #err_fn = f"../covariances/error_aemulus_{statistic}_hod3_test0.dat"
-    err_fn = f"../covariances/stdev{mock_tag_test}_{statistic}_hod3_test0.dat"
+    err_fn = f"../covariances/stdev_{mock_name_test}_{statistic}_hod3_test0.dat"
     print("Model name:", model_fn)
     print("Error filename:", err_fn)
 
@@ -39,7 +40,7 @@ def run(statistic, scaling, emu_name='George', max_iter=1000,
     print("Constructing emu")
     emu = Emu(statistic, scaling, model_fn, scaler_x_fn, scaler_y_fn, err_fn,
             train_mode=train_mode, test_mode=test_mode,
-            mock_tag_train=mock_tag_train, mock_tag_test=mock_tag_test)
+            mock_name_train=mock_name_train, mock_name_test=mock_name_test)
 
     if train_mode:
         print("Training")

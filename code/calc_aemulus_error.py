@@ -7,8 +7,9 @@ import utils
 def main():
     #mock_tag = '_aemulus_Msatmocks_test'
     mock_tag = '_aemulus_fmaxmocks_test'
-    stat_str = 'wp'
-    run(mock_tag, stat_str)
+    stat_strs = ['wp', 'xi', 'xi2', 'upf', 'mcf']
+    for stat_str in stat_strs:
+        run(mock_tag, stat_str)
 
 
 def run(mock_tag, stat_str):
@@ -30,7 +31,7 @@ def run(mock_tag, stat_str):
 
     devmean_arr = []
     for i, statistic in enumerate(statistics):
-        testing_dir = f'../../clust/results{mock_tag}/results_{statistic}'
+        testing_dir = f'/mount/sirocco1/ksf293/clust/results{mock_tag}/results_{statistic}'
         devmean_arr.append(calculate_devmeans(testing_dir, statistic, hod, cosmos, boxes, tests))
    
     #compute covariance assuming the mean is zero, as that is the expectation value (should be unbiased)

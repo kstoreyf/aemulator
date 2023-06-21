@@ -99,9 +99,9 @@ def load_hod_params_mock(mock_name):
 def load_cosmo_params(mock_name):
     # 7 cosmo params
     cosmo_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w"]
-    if mock_name=='aemulus_test' or mock_name=='aemulus_Msatmocks_test':
+    if 'test' in mock_name:
         cosmo_fn = '../tables/cosmology_camb_test_box_full.dat'
-    elif mock_name=='aemulus_train' or mock_name=='aemulus_Msatmocks_train':
+    elif 'train' in mock_name:
         cosmo_fn = '../tables/cosmology_camb_full.dat'
     else: 
         raise ValueError(f'Mock name {mock_name} not recognized!')
@@ -124,6 +124,7 @@ def load_hod_params(mock_name):
     else: 
         raise ValueError(f'Mock name {mock_name} not recognized!')
     hod_params = np.loadtxt(hod_fn)
+    # # Convert these columns (0: M_sat, 2: M_cut) to log to reduce dynamic range
     hod_params[:, 0] = np.log10(hod_params[:, 0])
     hod_params[:, 2] = np.log10(hod_params[:, 2])
     return hod_param_names, hod_params
@@ -427,8 +428,11 @@ def print_uncertainty_results_abstract(results_dict, params, id_pairs, prior_dic
         print()
 
 
-def load_statistics(statistic, result_dir_base, id_pairs):
-    if 'mean' in result_dir_base:
+def load_statistics(statistic, mock_name, id_pairs, verbose=False):
+    result_dir_base = f'/mount/sirocco1/ksf293/clust/results_{mock_name}'
+    if 'test' in mock_name and 'mean' not in mock_name:
+        raise KeyError("Loading statistics for individual test boxes (rather than mean) not supported")
+    if 'mean' in mock_name:
         clust_tag = '_mean'
     else:
         clust_tag = '_test_0'
@@ -441,14 +445,14 @@ def load_statistics(statistic, result_dir_base, id_pairs):
         r_vals, y_train = np.loadtxt(os.path.join(result_dir, fn_y_train), delimiter=',', unpack=True)
         r_arr.append(r_vals)
         y_train_arr.append(y_train)
-        if statistic!='xi2' and np.any(y_train <= 0):
+        if verbose and statistic!='xi2' and np.any(y_train <= 0):
             print(id_pair, " has 0s or negatives in data vector!")
     r_arr = np.array(r_arr)
     y_train_arr = np.array(y_train_arr)
     return r_arr, y_train_arr
 
 
-def load_id_pairs_train(mock_tag_train, train_tag=''):
+def load_id_pairs_train(mock_name_train, train_tag=''):
     ## ID values (cosmo and hod numbers)
     if 'nclosest' in train_tag:
         for tag in train_tag.split('_'):
@@ -460,8 +464,12 @@ def load_id_pairs_train(mock_tag_train, train_tag=''):
     print("original number of training ID pairs:", len(id_pairs_train))
     # Remove models that give zero or negative clustering statistic values
     # for all of the statistics (even the ones that are ok)
-    if mock_tag_train=='_aemulus_Msatmocks_train' and 'nclosest' not in train_tag:
-        bad_id_indices = [1296, 1335]
+    if mock_name_train=='aemulus_Msatmocks_train' and 'nclosest' not in train_tag:
+        bad_id_indices = [1296, 1335] #effectively the HOD IDs
+        id_pairs_train = np.delete(id_pairs_train, bad_id_indices, axis=0)
+        print("Deleted bad ID pairs with indices", bad_id_indices)
+    if mock_name_train=='aemulus_fmaxmocks_train':
+        bad_id_indices = [2228, 3208] #effectively the HOD IDs 
         id_pairs_train = np.delete(id_pairs_train, bad_id_indices, axis=0)
         print("Deleted bad ID pairs with indices", bad_id_indices)
     n_train = len(id_pairs_train)
