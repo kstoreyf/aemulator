@@ -110,7 +110,11 @@ def load_cosmo_params(mock_name):
 
 def load_hod_params(mock_name):
     # 11 cosmo params
+    
     hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
+    if 'fmaxmocks' in mock_name:
+        hod_param_names.append("f_max")
+    
     if mock_name=='aemulus_test':
         hod_fn = '../tables/HOD_test_np11_n1000_new_f_env.dat'
     elif mock_name=='aemulus_Msatmocks_test':
@@ -127,6 +131,7 @@ def load_hod_params(mock_name):
     # # Convert these columns (0: M_sat, 2: M_cut) to log to reduce dynamic range
     hod_params[:, 0] = np.log10(hod_params[:, 0])
     hod_params[:, 2] = np.log10(hod_params[:, 2])
+    assert len(hod_param_names)==hod_params.shape[1], "Lengths of HOD names and params don't line up!"
     return hod_param_names, hod_params
 
 # Prior is the min and max of training set parameters, +/- 10% on either side
@@ -430,13 +435,15 @@ def print_uncertainty_results_abstract(results_dict, params, id_pairs, prior_dic
 
 def load_statistics(statistic, mock_name, id_pairs, verbose=False):
     result_dir_base = f'/mount/sirocco1/ksf293/clust/results_{mock_name}'
+    result_dir = f'{result_dir_base}/results_{statistic}'
+    
     if 'test' in mock_name and 'mean' not in mock_name:
         raise KeyError("Loading statistics for individual test boxes (rather than mean) not supported")
     if 'mean' in mock_name:
         clust_tag = '_mean'
     else:
         clust_tag = '_test_0'
-    result_dir = f'{result_dir_base}/results_{statistic}'
+    
     r_arr = []
     y_train_arr = []
     for id_pair in id_pairs:

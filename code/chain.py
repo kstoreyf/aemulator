@@ -22,16 +22,18 @@ _param_names_hod = ['M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_
 def log_likelihood(theta, param_names, fixed_params, ys_observed, cov):
     s = time.time()
     theta = np.array(theta).flatten() #theta looks like [[[p]]] for some reason
+
     param_dict = dict(zip(param_names, theta)) #weirdly necessary for Powell minimization
     param_dict.update(fixed_params)
+
     emu_preds = []
     for emu in _emus:
         pred = emu.predict(param_dict)
         emu_preds.append(pred)
     emu_pred = np.hstack(emu_preds)
-    print('theta:', theta)
-    print('ys_obs:', ys_observed)
-    print('ys_pred:', emu_pred)
+    # print('theta:', theta)
+    # print('ys_obs:', ys_observed)
+    # print('ys_pred:', emu_pred)
     diff = (np.array(emu_pred) - np.array(ys_observed))/np.array(ys_observed) #fractional error
     diff = diff.flatten()
     # the solve is a better way to get the inverse

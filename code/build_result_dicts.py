@@ -6,9 +6,10 @@ import utils
 
 
 def main():
+    run()
     #run_scale_dicts()
     #run_single()
-    run_scale_dicts_addin()
+    #run_scale_dicts_addin()
 
 def run_single():
     results_dict_dir = '../data_products/results_dicts'
@@ -24,19 +25,22 @@ def run():
     # for all dicts
     results_dict_dir = '../data_products/results_dicts'
     id_pairs = np.loadtxt('../tables/id_pairs_recovery_test_70.txt', delimiter=',', dtype=np.int)
+    data_tag = '_aemulus_fmaxmocks_test'
+    config_tag = '_minscale0'
 
     # single and addin
     stat_strs_single = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str)
     fn_results_dict_single = f'{results_dict_dir}/results_dict_single.npy'
-    build_dict(stat_strs_single, id_pairs, '_minscale0', fn_results_dict_single)
+    build_dict(stat_strs_single, id_pairs, data_tag, config_tag, fn_results_dict_single)
 
-    stat_strs_addin = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
-    stat_strs_addin_full = np.concatenate((['wp'], stat_strs_addin))
-    fn_results_dict_addin_full = f'{results_dict_dir}/results_dict_addin_full.npy'
-    build_dict(stat_strs_addin_full, id_pairs, '_minscale0', fn_results_dict_addin_full)
+    # stat_strs_addin = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
+    # stat_strs_addin_full = np.concatenate((['wp'], stat_strs_addin))
+    # fn_results_dict_addin_full = f'{results_dict_dir}/results_dict_addin_full.npy'
+    # build_dict(stat_strs_addin_full, id_pairs, data_tag, config_tag, fn_results_dict_addin_full)
 
-    fn_results_dict_wpmaxscale = f'{results_dict_dir}/results_dict_wpmaxscale6.npy'
-    build_dict(stat_strs_addin_full, id_pairs, '_wpmaxscale6', fn_results_dict_wpmaxscale)
+    # fn_results_dict_wpmaxscale = f'{results_dict_dir}/results_dict_wpmaxscale6.npy'
+    config_tag = '_wpmaxscale6'
+    # build_dict(stat_strs_addin_full, id_pairs, data_tag, config_tag, fn_results_dict_wpmaxscale)
 
 
 def run_scale_dicts():
@@ -76,7 +80,8 @@ def run_scale_dicts_addin():
     build_dict_scales(stat_strs_scale, id_pairs, '_maxscale', fn_results_dict_maxscales, max_scales)
 
 
-def build_dict(stat_strs, id_pairs, config_tag, fn_results_dict, overwrite=False):
+def build_dict(stat_strs, id_pairs, data_tag, config_tag, fn_results_dict, 
+               param_tag='', overwrite=False):
     if os.path.exists(fn_results_dict) and not overwrite:
         print(f"Results dict {fn_results_dict} already exists, not overwriting!")
         return
@@ -86,7 +91,7 @@ def build_dict(stat_strs, id_pairs, config_tag, fn_results_dict, overwrite=False
         print(stat_str)
         for id_pair in id_pairs:
             id_cosmo, id_hod = id_pair
-            chaintag = f'{stat_str}_c{id_cosmo}h{id_hod}_all{config_tag}'
+            chaintag = f'{stat_str}{data_tag}_c{id_cosmo}h{id_hod}{param_tag}{config_tag}'
             results_dict[stat_str][tuple(id_pair)] = utils.construct_results_dict(chaintag)
     np.save(fn_results_dict, results_dict)
     print("Built and saved!")

@@ -65,7 +65,7 @@ def run(chain_params_fn):
     # Set actual calculated observable
     ys_observed = []
     for i, statistic in enumerate(statistics):
-        result_dir=f"/home/users/ksf293/clust/results{data_tag}_mean/results_{statistic}"
+        result_dir=f"/mount/sirocco1/ksf293/clust/results{data_tag}_mean/results_{statistic}"
         fn_stat=f"{result_dir}/{statistic}_cosmo_{cosmo}_HOD_{hod}_mean.dat"
         _, y_obs = np.loadtxt(fn_stat, delimiter=',', unpack=True)
 
@@ -128,19 +128,18 @@ def run(chain_params_fn):
 
     print("Building emulators")
     emus = [None]*n_stats
-    mock_tag_train = '_'+mock_name_train
     for i, statistic in enumerate(statistics):
         Emu = utils.get_emu(emu_names[i])
         
         train_tag = f'_{emu_names[i]}_{scalings[i]}{train_tags_extra[i]}'
-        model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
-        scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
-        scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
-        #err_fn = f"../covariances/stdev_aemulus_{statistic}_hod3_test0.dat"
+        models_dir = '/mount/sirocco1/ksf293/aemulator/models'
+        model_fn = f'{models_dir}/model_{statistic}{train_tag}' #emu will add proper file ending
+        scaler_x_fn = f'{models_dir}/scaler_x_{statistic}{train_tag}.joblib'
+        scaler_y_fn = f'{models_dir}/scaler_y_{statistic}{train_tag}.joblib'
         err_fn = f"../covariances/stdev_{mock_name_test}_{statistic}_hod3_test0.dat"
 
         emu = Emu(statistic, scalings[i], model_fn, scaler_x_fn, scaler_y_fn, err_fn, 
-                  bins=bins[i], predict_mode=True, mock_tag_train=mock_tag_train)
+                  bins=bins[i], predict_mode=True, mock_name_train=mock_name_train)
         emu.load_model()
         emus[i] = emu
         print(f"Emulator for {statistic} built with train_tag {train_tag}")

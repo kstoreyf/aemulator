@@ -4,11 +4,14 @@ import utils
 
 
 def main():
-    mock_tag = '_aemulus_Msatmocks_test'
-    train_tag_extra = '_errstdev_Msatmocks'
-    run(mock_tag, 'xi2', train_tag_extra)
+    #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
+    stat_strs = ['upf']
+    mock_tag = '_aemulus_fmaxmocks_test'
+    train_tag_extra = '_errstdev_fmaxmocks'
+    for stat_str in stat_strs:
+        run(mock_tag,stat_str, train_tag_extra)
 
-def run( mock_tag, stat_str, train_tag_extra='', cov_tag_extra=''):
+def run(mock_tag, stat_str, train_tag_extra='', cov_tag_extra=''):
 
     statistics = stat_str.split('_')
 
@@ -31,6 +34,7 @@ def run( mock_tag, stat_str, train_tag_extra='', cov_tag_extra=''):
 
     fracerrs = np.concatenate(fracerr_arrs, axis=1)
     cov_perf = utils.covariance(fracerrs, zeromean=True)
+    print(cov_perf)
     save_fn_perf = f"{cov_dir}/cov_emuperf{mock_tag}{cov_tag_extra}_{stat_str}{errtag}.dat"
     print('Saving cov_perf to', save_fn_perf)
     np.savetxt(save_fn_perf, cov_perf)
@@ -45,7 +49,7 @@ def run( mock_tag, stat_str, train_tag_extra='', cov_tag_extra=''):
 
 def load_fracerrs_aemulus(statistic, mock_tag, train_tag):
 
-    testing_dir = f'../../clust/results{mock_tag}_mean/results_{statistic}'    
+    testing_dir = f'/mount/sirocco1/ksf293/clust/results{mock_tag}_mean/results_{statistic}'    
     predictions_dir = f'../predictions/predictions_{statistic}{train_tag}'
 
     ptests = []

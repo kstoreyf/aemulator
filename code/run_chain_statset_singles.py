@@ -8,10 +8,13 @@ import run_chain
 def main(cosmo, hod):
 
     print(f"Running chain set for cosmo {cosmo}, hod {hod}")
-    #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
-    stat_strs = np.loadtxt('../tables/statistic_sets_single_double.txt', dtype=str)
+    stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
+    #stat_strs = np.loadtxt('../tables/statistic_sets_single_double.txt', dtype=str)
     #stat_strs = np.concatenate((stat_strs, ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2_mcf']))
-
+    data_name = 'aemulus_fmaxmocks_test'
+    data_tag = '_'+data_name
+    param_tag = '' # means all
+    
     for stat_str in stat_strs:
         print(f'Running chain for stat_str={stat_str} (cosmo {cosmo}, hod {hod})')
 
@@ -23,7 +26,7 @@ def main(cosmo, hod):
         config_tags = ['']
 
         for config_tag in config_tags:
-            config_fn = f'../chains/configs/chains_{stat_str}_c{cosmo}h{hod}{config_tag}.cfg'
+            config_fn = f'../chains/configs/chains_{stat_str}{data_tag}_c{cosmo}h{hod}{param_tag}{config_tag}.cfg'
             chain_params_fn = initialize_chain.main(config_fn, overwrite_param_file=False)
             if chain_params_fn==-1:
                 continue # means exists already

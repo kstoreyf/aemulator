@@ -187,7 +187,7 @@ def plot_accuracy_figure(statistics, train_tags, mock_tag_test='_aemulus_test'):
 
         n_bins = 9
         # assuming comparing mean
-        y_test_dir = f'/home/users/ksf293/clust/results{mock_tag_test}_mean'
+        y_test_dir = f'/mount/sirocco1/ksf293/clust/results{mock_tag_test}_mean'
         predictions_dir = f'../predictions/predictions_{statistic}{train_tag}'
         ys_test = np.empty((n_test, n_bins))
         ys_pred = np.empty((n_test, n_bins))

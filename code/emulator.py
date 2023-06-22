@@ -65,9 +65,11 @@ class Emulator(object):
         if predict_mode: 
             self.load_scalers()
         self.scale_training_data() # need to scale training data for George emu, so might as well always
-        self.param_names_ordered = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w',
-                                    'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f',
-                                   'f_env', 'delta_env', 'sigma_env']
+        # maximal list so we always train and test in same order
+        # (moved to in set_training_data, more robust)
+        # self.param_names_ordered = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w',
+        #                             'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f',
+        #                            'f_env', 'delta_env', 'sigma_env', 'f_max']
 
     def load_y_error(self):
         # TODO: check what this error is / should be - std or variance?
@@ -86,13 +88,14 @@ class Emulator(object):
 
         # cosmos_train_fn = '../tables/cosmology_camb_full.dat'
         # cosmos_train = np.loadtxt(cosmos_train_fn)
-        _, cosmos_train = utils.load_cosmo_params(self.mock_name_train)
+        cosmo_param_names, cosmos_train = utils.load_cosmo_params(self.mock_name_train)
         n_cosmo_params = cosmos_train.shape[1]
 
-        _, hods_train = utils.load_hod_params(self.mock_name_train)
+        hod_param_names, hods_train = utils.load_hod_params(self.mock_name_train)
         n_hod_params = hods_train.shape[1]
 
         self.n_params = n_cosmo_params + n_hod_params
+        self.param_names_ordered = cosmo_param_names + hod_param_names
 
         self.x_train = np.empty((self.n_train, self.n_params))
         for i in range(self.n_train):
@@ -115,7 +118,7 @@ class Emulator(object):
         # all r_vals are the same so just save the first one
         self.r_vals = r_arr[0]
 
-        # FOR TESTING PURPOSES ONLY
+        #FOR TESTING PURPOSES ONLY
         # print("TINY TRAINING SET")
         # print(self.x_train.shape)
         # self.n_train = 10
@@ -167,7 +170,7 @@ class Emulator(object):
 
         ### y values (labels, value of statistics in each bin)
         # Note: here we are using the mean of 5 boxes with the same parameters
-        self.n_bins_tot = 9
+        #self.n_bins_tot = 9
         # self.y_test = np.empty((self.n_test, self.n_bins_tot))
         # y_test_dir = f'{base_dir}/results{self.mock_tag_test}_mean'
         # for i in range(self.n_test):
@@ -175,8 +178,8 @@ class Emulator(object):
         #     y_test_fn = f'{y_test_dir}/results_{self.statistic}/{self.statistic}_cosmo_{id_cosmo}_HOD_{id_hod}_mean.dat'
         #     _, y = np.loadtxt(y_test_fn, delimiter=',', unpack=True)
         #     self.y_test[i,:] = y
-        mock_name_test_mean = f'{self.mock_name_test}_mean'
-        _, self.y_test = utils.load_statistics(self.statistic, mock_name_test_mean, self.id_pairs_test)
+        #mock_name_test_mean = f'{self.mock_name_test}_mean'
+       # _, self.y_test = utils.load_statistics(self.statistic, mock_name_test_mean, self.id_pairs_test)
 
 
     def pow10(self, x):
@@ -315,7 +318,7 @@ class Emulator(object):
 
     def scale_testing_data(self):
         self.x_test_scaled = self.scaler_x.transform(self.x_test)  
-        self.y_test_scaled = self.scaler_y.transform(self.y_test)  
+        #self.y_test_scaled = self.scaler_y.transform(self.y_test)  
 
     def save_scalers(self):
         joblib.dump(self.scaler_x, self.scaler_x_fn)
@@ -571,8 +574,9 @@ class EmulatorGPFlowBinned(Emulator):
             print(opt_logs)
 
     def test(self):
-        self.y_predict = np.empty(self.y_test.shape)
-        self.y_predict_scaled = np.empty(self.y_test.shape)
+        #self.y_predict = np.empty(self.y_test.shape)
+        self.y_predict = np.empty((self.x_test[0], self.n_bins))
+        self.y_predict_scaled = np.empty(self.y_predict.shape)
         for n in range(self.n_bins_tot):
             y_pred, variance = self.models[n].predict_f_compiled(self.x_test_scaled)
             self.y_predict_scaled[:,n] = y_pred.numpy().flatten()
@@ -741,8 +745,10 @@ class EmulatorGeorgeOrig(Emulator):
         return self.models[n]
 
     def test(self):
-        self.y_predict = np.empty(self.y_test.shape)
-        self.y_predict_scaled = np.empty(self.y_test.shape)
+        # self.y_predict = np.empty(self.y_test.shape)
+        # self.y_predict_scaled = np.empty(self.y_test.shape)
+        self.y_predict = np.empty((self.x_test[0], self.n_bins))
+        self.y_predict_scaled = np.empty(self.y_predict.shape)
         for n in range(self.n_bins_tot):
             self.y_predict_scaled[:,n] = self.models[n].predict(
                                     self.y_train_scaled[:,n], self.x_test_scaled, return_cov=False)
