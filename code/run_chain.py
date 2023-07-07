@@ -59,6 +59,8 @@ def run(chain_params_fn):
     n_bins_tot = 9
     if isinstance(bins, float) and np.isnan(bins):
         bins = np.array([list(range(0,n_bins_tot))]*n_stats)
+    if len(np.array(bins).flatten())==0:
+        raise ValueError("Bin array empty! Probs a bad config")
 
     data_tag = '_'+data_name
 
@@ -76,49 +78,62 @@ def run(chain_params_fn):
     f.attrs['ys_observed'] = ys_observed
 
     # Get true values
-    cosmo_param_names, cosmo_params = utils.load_cosmo_params(data_name)
-    hod_param_names, hod_params = utils.load_hod_params(data_name)
-    all_param_names = np.concatenate((cosmo_param_names, hod_param_names))
-    cosmo_truth = cosmo_params[cosmo]
-    hod_truth = hod_params[hod]
-    all_params_truth = np.concatenate((cosmo_truth, hod_truth))
-    fixed_params = dict(zip(all_param_names, all_params_truth))
+    if data_name=='prior':
+        # probs need to do something smarter here
+        fixed_params = {}
+        f.attrs['true_values'] = []
+        f.attrs['fixed_param_names'] = []
+        f.attrs['fixed_param_values'] = []
+    else:
+        cosmo_param_names, cosmo_params = utils.load_cosmo_params(data_name)
+        hod_param_names, hod_params = utils.load_hod_params(data_name)
+        all_param_names = np.concatenate((cosmo_param_names, hod_param_names))
+        cosmo_truth = cosmo_params[cosmo]
+        hod_truth = hod_params[hod]
+        all_params_truth = np.concatenate((cosmo_truth, hod_truth))
+        fixed_params = dict(zip(all_param_names, all_params_truth))
 
-    # Remove params that we want to vary from fixed param dict and add true values
-    truth = {}
-    for pn in param_names_vary:
-        truth[pn] = fixed_params[pn]
-        fixed_params.pop(pn)
-    #can't store dicts in h5py, so make sure truths (for variable params) are in same order as param names
-    truths = [truth[pname] for pname in param_names_vary]
-    fixed_param_names, fixed_param_values = [], []
-    if len(fixed_params)>0:
-        #fixed_param_names = list(fixed_params.keys())
-        fixed_param_names = np.array(list(fixed_params.keys()), dtype=h5py.string_dtype())
-        print(fixed_param_names)
-        fixed_param_values = [fixed_params[fpn] for fpn in fixed_param_names]
-    f.attrs['true_values'] = truths
-    f.attrs['fixed_param_names'] = fixed_param_names
-    f.attrs['fixed_param_values'] = fixed_param_values
+        # Remove params that we want to vary from fixed param dict and add to truth dict
+        truth = {}
+        for pn in param_names_vary:
+            truth[pn] = fixed_params[pn]
+            fixed_params.pop(pn)
+
+        #can't store dicts in h5py, so make sure truths (for variable params) are in same order as param names
+        truths = [truth[pname] for pname in param_names_vary]
+        fixed_param_names, fixed_param_values = [], []
+        if len(fixed_params)>0:
+            #fixed_param_names = list(fixed_params.keys())
+            fixed_param_names = np.array(list(fixed_params.keys()), dtype=h5py.string_dtype())
+            print(fixed_param_names)
+            fixed_param_values = [fixed_params[fpn] for fpn in fixed_param_names]
+        f.attrs['true_values'] = truths
+        f.attrs['fixed_param_names'] = fixed_param_names
+        f.attrs['fixed_param_values'] = fixed_param_values
 
     # Set up covariance matrix
-    if os.path.exists(cov_fn):
-        cov = np.loadtxt(cov_fn)
+    print(data_name)
+    if data_name=='prior':
+        cov = None
     else:
-        raise ValueError(f"Path to covmat {cov_fn} doesn't exist!")
-    #the covmat should have been constructed with 9 bins per stat
-    err_message = f"Cov bad shape! {cov.shape}, but n_bins_tot={n_bins_tot} and n_stats={n_stats}"
-    assert cov.shape[0] == n_stats*n_bins_tot and cov.shape[1] == n_stats*n_bins_tot, err_message
-    print("Condition number:", np.linalg.cond(cov))
-    f.attrs['covariance_matrix'] = cov
+        if os.path.exists(cov_fn):
+            cov = np.loadtxt(cov_fn)
+        else:
+            raise ValueError(f"Path to covmat {cov_fn} doesn't exist!")
+    
+        #the covmat should have been constructed with 9 bins per stat
+        err_message = f"Cov bad shape! {cov.shape}, but n_bins_tot={n_bins_tot} and n_stats={n_stats}"
+        assert cov.shape[0] == n_stats*n_bins_tot and cov.shape[1] == n_stats*n_bins_tot, err_message
+        print("Condition number:", np.linalg.cond(cov))
+        f.attrs['covariance_matrix'] = cov
 
-    # If restricting to certain scales, use only those covariance matrix parts
-    bins_for_cov = []
-    for i, statistic in enumerate(statistics):
-        bins_for_stat = np.array(bins[i]) + i*n_bins_tot #add i*n_bins_tot because need to jump to that square of covmat
-        bins_for_cov.extend(bins_for_stat)
-    cov = cov[bins_for_cov,:][:,bins_for_cov]
-    assert cov.shape[0] == sum(len(b_arr) for b_arr in bins), "Cov bad shape after restricting to certain scales!"
+        # If restricting to certain scales, use only those covariance matrix parts
+        bins_for_cov = []
+        for i, statistic in enumerate(statistics):
+            bins_for_stat = np.array(bins[i]) + i*n_bins_tot #add i*n_bins_tot because need to jump to that square of covmat
+            bins_for_cov.extend(bins_for_stat)
+        cov = cov[bins_for_cov,:][:,bins_for_cov]
+        assert cov.shape[0] == sum(len(b_arr) for b_arr in bins), "Cov bad shape after restricting to certain scales!"
 
     # DO NOT OVERWRITE EXISTING
     if os.path.exists(chain_results_fn):
@@ -149,7 +164,8 @@ def run(chain_params_fn):
     start = time.time()
     res = chain.run_mcmc(emus, param_names_vary, ys_observed, cov, chain_params_fn, chain_results_fn,        
                          mock_name_train, fixed_params=fixed_params, 
-                         n_threads=n_threads, dlogz=dlogz, seed=seed)
+                         n_threads=n_threads, dlogz=dlogz, seed=seed,
+                         data_name=data_name)
     end = time.time()
     print(f"Time: {(end-start)/60.0} min ({(end-start)/3600.} hrs) [{(end-start)/(3600.*24.)} days]")
                                 

@@ -75,8 +75,10 @@ def run(chain_params_fn):
     f.attrs['ys_observed'] = ys_observed
 
     # Get true values
-    cosmo_param_names, cosmo_truth = utils.load_cosmo_params_mock(data_name)
-    hod_param_names, hod_truth = utils.load_hod_params_mock(data_name)
+    #cosmo_param_names, cosmo_truth = utils.load_cosmo_params_mock(data_name)
+    cosmo_param_names, cosmo_truth = utils.load_cosmo_params(data_name)
+    #hod_param_names, hod_truth = utils.load_hod_params_mock(data_name)
+    hod_param_names, hod_truth = utils.load_hod_params(mock_name_train, data_name=data_name)
     all_param_names = np.concatenate((cosmo_param_names, hod_param_names))
     all_params_truth = np.concatenate((cosmo_truth, hod_truth))
     fixed_params = dict(zip(all_param_names, all_params_truth))
@@ -130,15 +132,18 @@ def run(chain_params_fn):
         Emu = utils.get_emu(emu_names[i])
         
         train_tag = f'_{emu_names[i]}_{scalings[i]}{train_tags_extra[i]}'
-        model_fn = f'../models/model_{statistic}{train_tag}' #emu will add proper file ending
-        scaler_x_fn = f'../models/scaler_x_{statistic}{train_tag}.joblib'
-        scaler_y_fn = f'../models/scaler_y_{statistic}{train_tag}.joblib'
+
+        models_dir = '/mount/sirocco1/ksf293/aemulator/models'
+        model_fn = f'{models_dir}/model_{statistic}{train_tag}' #emu will add proper file ending
+        scaler_x_fn = f'{models_dir}/scaler_x_{statistic}{train_tag}.joblib'
+        scaler_y_fn = f'{models_dir}/scaler_y_{statistic}{train_tag}.joblib'
+
         # this was wrong for Msatmocks!
         #err_fn = f"../covariances/stdev_aemulus_{statistic}_hod3_test0.dat"
         err_fn = f"../covariances/stdev_{mock_name_test}_{statistic}_hod3_test0.dat"
 
         emu = Emu(statistic, scalings[i], model_fn, scaler_x_fn, scaler_y_fn, err_fn, 
-                  bins=bins[i], predict_mode=True, mock_tag_train=mock_tag_train)
+                  bins=bins[i], predict_mode=True, mock_name_train=mock_name_train)
         emu.load_model()
         emus[i] = emu
         print(f"Emulator for {statistic} built with train_tag {train_tag}")

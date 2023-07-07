@@ -6,34 +6,82 @@ from utils import rbins, rlin
 
 def main():
     # example contours
-    stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
+    #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
+    #stat_strs = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str)
+
     
     #generate_single_mock(stat_strs)
-    generate_recovery_set(stat_strs)
+    #generate_recovery_set(stat_strs)
+    #config_prior()
 
-    #single()
-    #recovery_set()
-    #scale_analysis_set()
-    # for stat_str in stat_strs:
-    #   uchuu(stat_str)
+    #stat_strs = np.loadtxt('../tables/statistic_sets_scale_analysis.txt', dtype=str)
+    #generate_scale_analysis_set(stat_strs, mode='minscales')
+    #generate_scale_analysis_set(stat_strs, mode='maxscales')
 
-    #id_pairs = [(3,3)]
+    # stat_strs = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
+    # stat_strs = np.concatenate((np.array(['wp']), stat_strs))
+    # generate_recovery_set(stat_strs, config_tag='_minscale0_wpximaxscale6')
+
+    # stat_strs = np.array(['xi_xi2', 'wp_xi_xi2'])
+    # generate_recovery_set(stat_strs, config_tag='_minscale0',
+    #                       param_tag='_fixgammaf')
+
+    stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']
+    for stat_str in stat_strs:
+      config_uchuu(stat_str)
+
 
 def generate_single_mock(stat_strs):
     id_pair = (1,12)
+    cosmo, hod = id_pair
     for stat_str in stat_strs:  
-        cosmo, hod = id_pair
         config_aemulus(stat_str, cosmo, hod)
 
 
-def generate_recovery_set(stat_strs):
+def generate_recovery_set(stat_strs, config_tag='_minscale0',
+                          param_tag=''):
     id_pairs = np.loadtxt('../tables/id_pairs_recovery_test_70.txt', delimiter=',', dtype=np.int)
+    #id_pairs = [(0,0)] # for testing
     for id_pair in id_pairs:
+        cosmo, hod = id_pair
         for stat_str in stat_strs:  
+            config_aemulus(stat_str, cosmo, hod, config_tag=config_tag,
+                           param_tag=param_tag)
+
+
+def generate_scale_analysis_set(stat_strs, mode='maxscales',
+                                config_tag_extra=''):
+    n_bins_tot = 9
+    scales = np.arange(0, n_bins_tot)
+    id_pairs = np.loadtxt('../tables/id_pairs_recovery_test_70.txt', delimiter=',', dtype=np.int)
+    #id_pairs = [(0,0)]
+    for id_pair in id_pairs:
+        cosmo, hod = id_pair
+        for stat_str in stat_strs:  
+            statistics = stat_str.split('_')
             cosmo, hod = id_pair
-            config_aemulus(stat_str, cosmo, hod, config_tag='_minscale0')
 
-
+            for scale in scales:
+                if mode=='minscales':
+                    bins = [list(range(scale, n_bins_tot))]*len(statistics) # for n_bins_tot = 9 
+                    config_tag = f'_minscale{scale}'
+                    # if we need to line up upf with other bins, match those bins
+                    # if just upf, regular binning and we will make sure to 
+                    # plot it on proper scales
+                    if 'upf' in statistics and len(statistics)>1:
+                        idx_upf = statistics.index('upf')
+                        bins[idx_upf] = match_bins(rbins, rlin, minscale_idx=scale, maxscale_idx=n_bins_tot-1) 
+                elif mode=='maxscales':
+                    bins = [list(range(0, scale+1))]*len(statistics) # for n_bins_tot = 9; +1 bc should be inclusive
+                    config_tag = f'_maxscale{scale}'
+                    if 'upf' in statistics and len(statistics)>1:
+                        idx_upf = statistics.index('upf')
+                        bins[idx_upf] = match_bins(rbins, rlin, minscale_idx=0, maxscale_idx=scale)  
+                else:
+                    raise ValueError("Mode note recognized!")
+                
+                config_tag += config_tag_extra
+                config_aemulus(stat_str, cosmo, hod, config_tag=config_tag, bins=bins)
 
 
 def config_uchuu(stat_str):
@@ -43,30 +91,29 @@ def config_uchuu(stat_str):
     data_name = 'uchuu'
     data_tag = '_'+data_name
 
-    mock_name_train = 'aemulus_Msatmocks_train'
-    mock_name_test = 'aemulus_Msatmocks_test'
-    #config_tag = '_Msatmocks_covglam4'
-    #config_tag = '_Msatmocks_covglam4_allmaxscale6'
-    #config_tag = '_Msatmocks_covaemsmooth'
-    #config_tag = '_Msatmocks_covglamsmooth_ellcosmoprior'
-    #infl_tag = '_inflateupferr3nox'
+    mock_tag = '_aemulus_fmaxmocks'
+    mock_name_train = 'aemulus_fmaxmocks_train'
+    mock_name_test = 'aemulus_fmaxmocks_test'
+
     infl_tag = ''
     comb_tag = '_smooth'+infl_tag
-    cov_tag_extra = '_uchuuchi2nclosest2000'
-    #cov_tag_extra = ''
-    config_tag = f'_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle{cov_tag_extra}{infl_tag}'
+    #cov_tag_extra = '_uchuuchi2nclosest2000'
+    cov_tag_extra = ''
+    config_tag = f'{mock_tag}{cov_tag_extra}{infl_tag}'
+    #config_tag = f'_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle{cov_tag_extra}{infl_tag}'
     #config_tag = '_Msatmocks_wpmaxscale6'
 
-    param_tag = '_all'
+    param_tag = ''
+    #param_tag = '_all'
     #param_tag = '_hodparams'
     save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{data_tag}{param_tag}{config_tag}.h5'
 
     emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
     scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
 
-    train_tags_extra = [f'_errstdev_Msatmocks{cov_tag_extra}']*len(statistics)
+    train_tags_extra = [f'_errstdev_fmaxmocks{cov_tag_extra}']*len(statistics)
 
-    chain_results_fn = f'/home/users/ksf293/aemulator/chains/results/results_{stat_str}{data_tag}{param_tag}{config_tag}.pkl'
+    chain_results_fn = f'/mount/sirocco1/ksf293/aemulator/chains/results/results_{stat_str}{data_tag}{param_tag}{config_tag}.pkl'
     n_threads = utils.get_nthreads(len(statistics))
     dlogz_str = '1e-2'
     # use aemulus covariance for uchuu
@@ -80,14 +127,21 @@ def config_uchuu(stat_str):
     #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuu_{stat_str}.dat'
     #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}_uchuu_smooth_{stat_str}.dat'
 
-    param_names_vary = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w', 'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
-    #param_names_vary = ['M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
+    param_names_vary = get_param_names(param_tag, mock_name_train)
     seed = np.random.randint(1000)
 
     if 'wpmaxscale6' in config_tag:
         bins = []
         for i in range(len(statistics)):
             if 'wp' in statistics[i]: #writing this way to include "wp80"
+                bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    if 'wpximaxscale6' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            #writing this way for wp to include "wp80", but not for xi bc of xi2
+            if 'wp' in statistics[i] or statistics[i]=='xi': 
                 bins.append(list(range(0, 7)))
             else:
                 bins.append(list(range(0, 9)))
@@ -108,17 +162,15 @@ def config_uchuu(stat_str):
                         chain_results_fn, n_threads, dlogz_str, 
                         cov_fn, param_names_vary, seed,
                         data_name, bins)
-    if param_tag=='_all':
-        config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}{data_tag}{config_tag}.cfg'
-    else:
-        config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}{data_tag}{param_tag}{config_tag}.cfg'
+
+    config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}{data_tag}{param_tag}{config_tag}.cfg'
+    
     print(config_fn)
     with open(config_fn, 'w') as f:
         f.write(contents)
 
 
-def config_aemulus(stat_str, cosmo, hod, config_tag=''):
-
+def config_aemulus(stat_str, cosmo, hod, config_tag='', param_tag='', bins=None):
     statistics = stat_str.split('_')
 
     data_name = 'aemulus_fmaxmocks_test'
@@ -128,7 +180,6 @@ def config_aemulus(stat_str, cosmo, hod, config_tag=''):
     mock_name_train = 'aemulus_fmaxmocks_train'
     mock_name_test = 'aemulus_fmaxmocks_test'
 
-    param_tag = '' # means all
     #param_tag = '_omegam_sigma8'
     save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{data_tag}_c{cosmo}h{hod}{param_tag}{config_tag}.h5'
 
@@ -142,33 +193,32 @@ def config_aemulus(stat_str, cosmo, hod, config_tag=''):
     dlogz_str = '1e-2'
     cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_smoothgauss_emuperf_{mock_name_test}_{stat_str}_hod3_test0.dat'
 
-    if param_tag=='':
-        cosmo_param_names, _ = utils.load_cosmo_params(mock_name_train)
-        hod_param_names, _ = utils.load_hod_params(mock_name_train)
-        param_names_vary = cosmo_param_names + hod_param_names
-    elif param_tag=='_omegam':
-        # usually for testing purposes
-        param_names_vary = ['Omega_m']
-    elif param_tag=='_omegam_sigma8':
-        # usually for testing purposes
-        param_names_vary = ['Omega_m', 'sigma_8']
-    else:
-        raise ValueError("What to use for param_names_vary??")
-    #param_names_vary = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w', 'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env', 'f_max']
+    # param names, fmaxmocks: ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w', 'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env', 'f_max']
+    param_names_vary = get_param_names(param_tag, mock_name_train)
+    #print('param names vary:', param_names_vary)
 
     seed = np.random.randint(1000)
 
-    if 'wpmaxscale6' in config_tag:
-        bins = []
-        for i in range(len(statistics)):
-            if 'wp' in statistics[i]:
-                bins.append(list(range(0, 7)))
-            else:
-                bins.append(list(range(0, 9)))
-    elif 'allmaxscale6' in config_tag:
-        bins = [list(range(0, 7))]*len(statistics)
-    else:
-        bins = [list(range(0, 9))]*len(statistics)
+    # if it isn't None, we've passed it in and take that!
+    if bins is None:
+        if 'wpmaxscale6' in config_tag:
+            bins = []
+            for i in range(len(statistics)):
+                if 'wp' in statistics[i]:
+                    bins.append(list(range(0, 7)))
+                else:
+                    bins.append(list(range(0, 9)))
+        if 'wpximaxscale6' in config_tag:
+            bins = []
+            for i in range(len(statistics)):
+                if 'wp' in statistics[i] or statistics[i]=='xi':
+                    bins.append(list(range(0, 7)))
+                else:
+                    bins.append(list(range(0, 9)))
+        elif 'allmaxscale6' in config_tag:
+            bins = [list(range(0, 7))]*len(statistics)
+        else:
+            bins = [list(range(0, 9))]*len(statistics)
     
     contents = populate_config_blank(save_fn, statistics, emu_names, scalings, train_tags_extra,
                         mock_name_train, mock_name_test,
@@ -180,6 +230,80 @@ def config_aemulus(stat_str, cosmo, hod, config_tag=''):
     print(config_fn)
     with open(config_fn, 'w') as f:
         f.write(contents)
+
+
+def config_prior(config_tag=''):
+
+    statistics = []
+
+    # don't actually need for prior but need to run_chain smoothly
+    data_name = 'prior'
+    data_tag = '_'+data_name
+
+    # mock names used for building emus
+    mock_name_train = 'aemulus_fmaxmocks_train'
+    mock_name_test = 'aemulus_fmaxmocks_test'
+
+    param_tag = '' # means all
+    #save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{data_tag}_c{cosmo}h{hod}{param_tag}{config_tag}.h5'
+    save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params{data_tag}{param_tag}{config_tag}.h5'
+
+    emu_names = []
+    scalings = []
+    train_tags_extra = []
+
+    #chain_results_fn = f'/home/users/ksf293/aemulator/chains/results/results_{stat_str}{data_tag}_c{cosmo}h{hod}{param_tag}{config_tag}.pkl'
+    chain_results_fn = f'/mount/sirocco1/ksf293/aemulator/chains/results/results{data_tag}{param_tag}{config_tag}.pkl'
+    n_threads = 24
+    dlogz_str = '1e-2'
+    # won't be used but need a dummy covmat to make run_chain smoothly
+    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_smoothgauss_emuperf_{mock_name_test}_wp_hod3_test0.dat'
+    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_empty.dat'
+    cov_fn = None
+    #if not os.path.exists(cov_fn):
+    # empty = np.empty((0,0))
+    # print(empty.shape)
+    # np.savetxt(cov_fn, empty)
+
+    param_names_vary = get_param_names(param_tag, mock_name_train)
+
+    seed = np.random.randint(1000)
+    bins = []
+    
+    # won't be used but need a dummy to make run_chain smoothly
+    cosmo, hod = 0, 0
+
+    contents = populate_config_blank(save_fn, statistics, emu_names, scalings, train_tags_extra,
+                        mock_name_train, mock_name_test,
+                        chain_results_fn, n_threads, dlogz_str, 
+                        cov_fn, param_names_vary, seed,
+                        data_name, bins, cosmo=cosmo, hod=hod)
+    
+    config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains{data_tag}{param_tag}{config_tag}.cfg'
+    print(config_fn)
+    with open(config_fn, 'w') as f:
+        f.write(contents)
+
+
+def get_param_names(param_tag, mock_name_train):
+    if param_tag=='':
+        cosmo_param_names, _ = utils.load_cosmo_params(mock_name_train)
+        hod_param_names, _ = utils.load_hod_params(mock_name_train)
+        param_names_vary = cosmo_param_names + hod_param_names
+    elif param_tag=='_omegam':
+        # usually for testing purposes
+        param_names_vary = ['Omega_m']
+    elif param_tag=='_omegam_sigma8':
+        # usually for testing purposes
+        param_names_vary = ['Omega_m', 'sigma_8']
+    elif param_tag=='_fixgammaf':
+        cosmo_param_names, _ = utils.load_cosmo_params(mock_name_train)
+        hod_param_names, _ = utils.load_hod_params(mock_name_train)
+        param_names_vary = cosmo_param_names + hod_param_names
+        param_names_vary.remove('f')
+    else:
+        raise ValueError("What to use for param_names_vary??")
+    return param_names_vary
 
 
 def single():

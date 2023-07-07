@@ -92,28 +92,45 @@ def load_hod_params_mock(mock_name):
     if mock_name=='uchuu':
         # made using SHAM! but we do know gamma_f=1
         hod_params = [float("NaN")]*len(hod_param_names)
-        idx_f = hod_params.index("f")
+        #idx_f = hod_params.index("f")
+        idx_f = hod_param_names.index("f")
         hod_params[idx_f] = 1.0
     return hod_param_names, hod_params
 
 def load_cosmo_params(mock_name):
     # 7 cosmo params
     cosmo_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w"]
-    if 'test' in mock_name:
+    if mock_name=='uchuu':
+        # from http://skiesanduniverses.org/Simulations/Uchuu/
+        # not sure about N_eff! pulled from Planck2015 table 5, rightmost col (https://arxiv.org/pdf/1502.01589.pdf)
+        # w??
+        cosmo_params = [0.3089, 0.0486, 0.8159, 0.6774, 0.9667, 3.04, -1]
+    elif 'test' in mock_name:
         cosmo_fn = '../tables/cosmology_camb_test_box_full.dat'
+        cosmo_params = np.loadtxt(cosmo_fn)
     elif 'train' in mock_name:
         cosmo_fn = '../tables/cosmology_camb_full.dat'
+        cosmo_params = np.loadtxt(cosmo_fn)
     else: 
         raise ValueError(f'Mock name {mock_name} not recognized!')
-    cosmo_params = np.loadtxt(cosmo_fn)
+    
     return cosmo_param_names, cosmo_params
 
-def load_hod_params(mock_name):
-    # 11 cosmo params
+def load_hod_params(mock_name, data_name=None):
+    # 11 hod params, + f_max
     
     hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
     if 'fmaxmocks' in mock_name:
         hod_param_names.append("f_max")
+
+    if data_name=='uchuu':
+        # made using SHAM! but we do know gamma_f=1
+        hod_params = [float("NaN")]*len(hod_param_names)
+        #idx_f = hod_params.index("f")
+        idx_f = hod_param_names.index("f")
+        hod_params[idx_f] = 1.0
+        hod_params = np.array(hod_params)
+        return hod_param_names, hod_params
     
     if mock_name=='aemulus_test':
         hod_fn = '../tables/HOD_test_np11_n1000_new_f_env.dat'
@@ -319,20 +336,21 @@ def construct_results_dict(chaintag):
     idx_gamma_f = np.where(param_names=='f')[0][0]
     idx_sigma_8 = np.where(param_names=='sigma_8')[0][0]
     f = samples_equal[:,idx_Omega_m]**0.55
-    print(get_uncertainties(f))
-    print(get_uncertainties(f*samples_equal[:,idx_sigma_8]))
+    # print(get_uncertainties(f))
+    # print(get_uncertainties(f*samples_equal[:,idx_sigma_8]))
     fsigma8 = f*samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]
-    print(get_uncertainties(f*samples_equal[:,idx_gamma_f]))
-    print(get_uncertainties(samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
-    print(get_uncertainties(f*samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
+    # print(get_uncertainties(f*samples_equal[:,idx_gamma_f]))
+    # print(get_uncertainties(samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
+    # print(get_uncertainties(f*samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
     samples_equal = np.hstack((samples_equal, np.atleast_2d(fsigma8).T))
     param_names = np.append(param_names, 'fsigma8')
-    fsigma8_true = truths[idx_Omega_m]**0.55 * truths[idx_gamma_f] * truths[idx_sigma_8]
-    truths = np.append(truths, fsigma8_true)
-    print()
-    print(get_uncertainties(samples_equal[:,idx_gamma_f]))
-    print(get_uncertainties(samples_equal[:,idx_sigma_8]))
-    print(get_uncertainties(samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
+    if truths.size>0: # is not empty (e.g. in prior case)
+        fsigma8_true = truths[idx_Omega_m]**0.55 * truths[idx_gamma_f] * truths[idx_sigma_8]
+        truths = np.append(truths, fsigma8_true)
+    # print()
+    # print(get_uncertainties(samples_equal[:,idx_gamma_f]))
+    # print(get_uncertainties(samples_equal[:,idx_sigma_8]))
+    # print(get_uncertainties(samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
 
     # trying this 
     samples_f = samples[:,idx_Omega_m]**0.55
@@ -340,8 +358,8 @@ def construct_results_dict(chaintag):
     # weights are not by parameter, just one for each point/sample, so 
     # not sure if need to do anything to them?
     fsigma8_equal = dyfunc.resample_equal(samples_fsigma8, weights)
-    print()
-    print(get_uncertainties(fsigma8_equal))
+    # print()
+    # print(get_uncertainties(fsigma8_equal))
 
     means = get_means(samples_equal)
     medians = get_medians(samples_equal)
@@ -354,7 +372,8 @@ def construct_results_dict(chaintag):
         #sub_dict['max'] = maxes[j]
         sub_dict['median'] = medians[j]
         sub_dict['uncertainty'] = uncertainties[j]
-        sub_dict['truth'] = truths[j]
+        if truths.size>0: # is not empty (e.g. in prior case)
+            sub_dict['truth'] = truths[j]
         result_dict_single[pn] = sub_dict
         
     #return result_dict_single, param_names, samples_equal

@@ -5,6 +5,7 @@ import numpy as np
 import os
 import pickle
 import scipy
+import scipy.stats
 import time
 
 import dynesty
@@ -143,7 +144,7 @@ def get_cov_means_for_hypercube_prior(idxs_cosmo_vary):
 
 #@profile
 def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results_fn, mock_name_hod, fixed_params={},
-             n_threads=1, dlogz=0.01, seed=None):
+             n_threads=1, dlogz=0.01, seed=None, data_name=''):
 
     print("Dynesty sampling (static) - nongen")
     global _emus, _hod_bounds, _cosmo_bounds
@@ -188,6 +189,12 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
         f.attrs['dlogz'] = dlogz
     f.close()
 
+    if data_name=='prior':
+        likelihood_func = log_likelihood_const
+    else:
+        likelihood_func = log_likelihood
+
+
     # Print info
     print("nlive:", nlive)
     print("sample_method:", sample_method)
@@ -213,11 +220,8 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
 
         #print("USING FLAT COSMO PRIOR; ARE U SURE?")
         sampler = dynesty.NestedSampler(
-            log_likelihood,
-            #log_likelihood_ellprior,
-            #log_likelihood_const, # FOR CHECKING PRIOR, JUST NEED TO SWITCH TO THIS
+            likelihood_func,
             prior_transform_hypercube,
-            #prior_transform_flat, # TRYING THIS
             num_params, logl_args=logl_args, nlive=nlive,
             ptform_args=prior_args, rstate=rstate,
             pool=pool, queue_size=queue_size,
@@ -226,11 +230,12 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
             slices=slices)
 
         # Run sampler
-        sampler.run_nested(dlogz=dlogz)
+        sampler.run_nested(dlogz=dlogz,
+                           print_progress=False)
         res = sampler.results
         print(res.summary())
 
         # save with pickle
-        print("Saving results object with pickle")
+        print("Saving results object to", chain_results_fn)
         with open(chain_results_fn, 'wb') as pickle_file:
             pickle.dump(res, pickle_file)

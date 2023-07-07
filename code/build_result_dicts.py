@@ -29,14 +29,14 @@ def run():
     config_tag = '_minscale0'
 
     # single and addin
-    stat_strs_single = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str)
-    fn_results_dict_single = f'{results_dict_dir}/results_dict_single.npy'
-    build_dict(stat_strs_single, id_pairs, data_tag, config_tag, fn_results_dict_single)
+    # stat_strs_single = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str)
+    # fn_results_dict_single = f'{results_dict_dir}/results_dict_single.npy'
+    # build_dict(stat_strs_single, id_pairs, data_tag, config_tag, fn_results_dict_single)
 
-    # stat_strs_addin = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
-    # stat_strs_addin_full = np.concatenate((['wp'], stat_strs_addin))
-    # fn_results_dict_addin_full = f'{results_dict_dir}/results_dict_addin_full.npy'
-    # build_dict(stat_strs_addin_full, id_pairs, data_tag, config_tag, fn_results_dict_addin_full)
+    stat_strs_addin = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
+    stat_strs_addin_full = np.concatenate((['wp'], stat_strs_addin))
+    fn_results_dict_addin_full = f'{results_dict_dir}/results_dict_addin_full.npy'
+    build_dict(stat_strs_addin_full, id_pairs, data_tag, config_tag, fn_results_dict_addin_full)
 
     # fn_results_dict_wpmaxscale = f'{results_dict_dir}/results_dict_wpmaxscale6.npy'
     config_tag = '_wpmaxscale6'

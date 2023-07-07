@@ -297,7 +297,7 @@ def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_lab
         chain_fn = f'../chains/param_files/chain_params_{chaintag}.h5'
         fw = h5py.File(chain_fn, 'r')
         param_names = fw.attrs['param_names_vary']
-        if vertical_markers is None:
+        if vertical_markers is None and len(fw.attrs['true_values'])>0:
             vertical_markers_toplot = fw.attrs['true_values']
         else:
             vertical_markers_toplot = vertical_markers
@@ -322,7 +322,8 @@ def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_lab
             idxs = np.array(idxs).flatten()
             samples = samples[:,idxs]
             # Note: weight & evidence same for all params, shape (n_samps,), so don't need to slice
-            vertical_markers_toplot = vertical_markers_toplot[idxs]
+            if vertical_markers_toplot is not None:
+                vertical_markers_toplot = vertical_markers_toplot[idxs]
 
         # param_labels is in utils
         labels = [param_labels[pn] for pn in params_toplot]
@@ -440,7 +441,8 @@ def plot_uncertainty_bar_chart(ax, results_dict, prior_dict, param_toplot, stat_
 
 
 def plot_cumulative_dist_figure(results_dict, params_toplot, stat_strs_toplot, id_pairs, labels, colors, 
-                                nrows=2, ncols=2, divide_by_error=False, value_to_compare='median'):
+                                nrows=2, ncols=2, divide_by_error=False, value_to_compare='median',
+                                legend_loc='lower right'):
     subfig_width, subfig_height = (6,5)
     fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
     plt.subplots_adjust(hspace=0.22, wspace=0.15)
@@ -460,7 +462,7 @@ def plot_cumulative_dist_figure(results_dict, params_toplot, stat_strs_toplot, i
             
     handles, labels = axarr[0,0].get_legend_handles_labels()
     #plt.legend(handles, labels, loc=(1.1,0.8))
-    axarr[1,1].legend(handles, labels, loc='lower right')
+    axarr[1,1].legend(handles, labels, loc=legend_loc)
 
 
 def plot_cumulative_dist(results_dict, ax, param_toplot, stat_strs_toplot, id_pairs, labels, colors,
