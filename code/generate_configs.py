@@ -25,8 +25,10 @@ def main():
     # stat_strs = np.array(['xi_xi2', 'wp_xi_xi2'])
     # generate_recovery_set(stat_strs, config_tag='_minscale0',
     #                       param_tag='_fixgammaf')
-
-    stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']
+ 
+    #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']
+    #stat_strs = ['wp_xi_xi2_upf', 'wp_xi_xi2_mcf']
+    stat_strs = ['wp_xi_xi2']
     for stat_str in stat_strs:
       config_uchuu(stat_str)
 
@@ -96,10 +98,11 @@ def config_uchuu(stat_str):
     mock_name_test = 'aemulus_fmaxmocks_test'
 
     infl_tag = ''
+    #infl_tag = '_inflateupferr3nox'
     comb_tag = '_smooth'+infl_tag
     #cov_tag_extra = '_uchuuchi2nclosest2000'
     cov_tag_extra = ''
-    config_tag = f'{mock_tag}{cov_tag_extra}{infl_tag}'
+    config_tag = f'{mock_tag}{cov_tag_extra}{infl_tag}_wpximaxscale6'
     #config_tag = f'_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle{cov_tag_extra}{infl_tag}'
     #config_tag = '_Msatmocks_wpmaxscale6'
 
@@ -137,7 +140,7 @@ def config_uchuu(stat_str):
                 bins.append(list(range(0, 7)))
             else:
                 bins.append(list(range(0, 9)))
-    if 'wpximaxscale6' in config_tag:
+    elif 'wpximaxscale6' in config_tag:
         bins = []
         for i in range(len(statistics)):
             #writing this way for wp to include "wp80", but not for xi bc of xi2
@@ -145,7 +148,7 @@ def config_uchuu(stat_str):
                 bins.append(list(range(0, 7)))
             else:
                 bins.append(list(range(0, 9)))
-    if 'upfmaxscale6' in config_tag:
+    elif 'upfmaxscale6' in config_tag:
         bins = []
         for i in range(len(statistics)):
             if statistics[i]=='upf':
@@ -208,7 +211,7 @@ def config_aemulus(stat_str, cosmo, hod, config_tag='', param_tag='', bins=None)
                     bins.append(list(range(0, 7)))
                 else:
                     bins.append(list(range(0, 9)))
-        if 'wpximaxscale6' in config_tag:
+        elif 'wpximaxscale6' in config_tag:
             bins = []
             for i in range(len(statistics)):
                 if 'wp' in statistics[i] or statistics[i]=='xi':

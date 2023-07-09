@@ -162,7 +162,8 @@ def plot_accuracy(statistic, train_tag):
     axarr[2].axhline(0, color='k', lw=0.5)
 
 
-def plot_accuracy_figure(statistics, train_tags, mock_tag_test='_aemulus_test'):
+def plot_accuracy_figure(statistics, train_tags, mock_tag_test='_aemulus_test',
+                         id_tag=''):
     
     fig = plt.figure(figsize=(20, 15))
 
@@ -179,7 +180,7 @@ def plot_accuracy_figure(statistics, train_tags, mock_tag_test='_aemulus_test'):
         ax2 = plt.Subplot(fig, inner[2])
         axarr = [ax0, ax1, ax2]
 
-        id_pairs_test = utils.load_id_pairs_test(train_tag)
+        id_pairs_test = utils.load_id_pairs_test(id_tag=id_tag)
         n_test = id_pairs_test.shape[0]
 
         ids_cosmo_unique = set(id_pairs_test[:,0])

@@ -20,12 +20,14 @@ def main():
     #cov_tag_extra = '_uchuu'
     train_tag_extra = f'_errstdev_fmaxmocks{cov_tag_extra}'
     #mode = None # for aemulus
+    #inflate_upf_err = False
 
-    stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']
+    #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
+    stat_strs = ['wp_xi_xi2_upf']
     mode = 'glam_for_uchuu'
     #mode = 'aemulus_for_uchuu'
-
     inflate_upf_err = False
+
     for stat_str in stat_strs:
         print(f'Calculating covariance matrices for {stat_str}')
         calc_aemulus_error.run(mock_tag, stat_str)

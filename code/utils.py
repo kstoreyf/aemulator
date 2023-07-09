@@ -320,6 +320,9 @@ def construct_results_dict(chaintag):
     fw = h5py.File(chain_fn, 'r')
     param_names = fw.attrs['param_names_vary']
     truths = fw.attrs['true_values']
+
+    fixed_param_names = list(fw.attrs['fixed_param_names'])
+    fixed_param_values = fw.attrs['fixed_param_values']
     fw.close()
     
     #chain_results_dir = '/export/sirocco1/ksf293/aemulator/chains/results'
@@ -332,20 +335,45 @@ def construct_results_dict(chaintag):
         samples_equal = dyfunc.resample_equal(samples, weights)
 
     # add fsigma8
-    idx_Omega_m = np.where(param_names=='Omega_m')[0][0]
-    idx_gamma_f = np.where(param_names=='f')[0][0]
-    idx_sigma_8 = np.where(param_names=='sigma_8')[0][0]
-    f = samples_equal[:,idx_Omega_m]**0.55
+    if 'Omega_m' in param_names:
+        idx_Omega_m = np.where(param_names=='Omega_m')[0][0]
+        Omega_m = samples_equal[:,idx_Omega_m]
+        if truths.size>0:
+            Omega_m_true = truths[idx_Omega_m]
+    else:
+        Omega_m = fixed_param_values[fixed_param_names.index('Omega_m')]
+        Omega_m_true = Omega_m
+
+    if 'f' in param_names:    
+        idx_gamma_f = np.where(param_names=='f')[0][0]
+        gamma_f = samples_equal[:,idx_gamma_f]
+        if truths.size>0:
+            gamma_f_true = truths[idx_gamma_f]
+    else:
+        gamma_f = fixed_param_values[fixed_param_names.index('f')]
+        gamma_f_true = gamma_f
+
+    if 'sigma_8' in param_names:
+        idx_sigma_8 = np.where(param_names=='sigma_8')[0][0]
+        sigma_8 = samples_equal[:,idx_sigma_8]
+        if truths.size>0:
+            sigma_8_true = truths[idx_sigma_8]
+    else:
+        sigma_8 = fixed_param_values[fixed_param_names.index('sigma_8')]
+        sigma_8_true = sigma_8
+
+    f = Omega_m**0.55
     # print(get_uncertainties(f))
     # print(get_uncertainties(f*samples_equal[:,idx_sigma_8]))
-    fsigma8 = f*samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]
+    fsigma8 = f*gamma_f*sigma_8
     # print(get_uncertainties(f*samples_equal[:,idx_gamma_f]))
     # print(get_uncertainties(samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
     # print(get_uncertainties(f*samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
     samples_equal = np.hstack((samples_equal, np.atleast_2d(fsigma8).T))
     param_names = np.append(param_names, 'fsigma8')
     if truths.size>0: # is not empty (e.g. in prior case)
-        fsigma8_true = truths[idx_Omega_m]**0.55 * truths[idx_gamma_f] * truths[idx_sigma_8]
+        #fsigma8_true = truths[idx_Omega_m]**0.55 * truths[idx_gamma_f] * truths[idx_sigma_8]
+        fsigma8_true = Omega_m_true**0.55 * gamma_f_true * sigma_8_true
         truths = np.append(truths, fsigma8_true)
     # print()
     # print(get_uncertainties(samples_equal[:,idx_gamma_f]))
@@ -353,8 +381,8 @@ def construct_results_dict(chaintag):
     # print(get_uncertainties(samples_equal[:,idx_gamma_f]*samples_equal[:,idx_sigma_8]))
 
     # trying this 
-    samples_f = samples[:,idx_Omega_m]**0.55
-    samples_fsigma8 = samples_f*samples[:,idx_gamma_f]*samples[:,idx_sigma_8]
+    samples_f = Omega_m**0.55
+    samples_fsigma8 = samples_f*gamma_f*sigma_8
     # weights are not by parameter, just one for each point/sample, so 
     # not sure if need to do anything to them?
     fsigma8_equal = dyfunc.resample_equal(samples_fsigma8, weights)
@@ -423,6 +451,32 @@ def compute_uncertainties_from_results(results_dict, stat_strs, params, id_pairs
     return uncertainties
 
 
+def print_uncertainty_results(results_dict, params, id_pairs, prior_dict):
+    stat_strs = results_dict.keys()
+    print(stat_strs)
+    for j, pn in enumerate(params):    
+
+        print(pn)
+        uncertainty_prior = prior_dict[pn]['uncertainty']
+        print(f"Prior: {uncertainty_prior:.4f}")
+
+        uncertainties_stat_strs = []
+        for stat_str in stat_strs:
+            uncertainties_id_pairs = []
+            for _, id_pair in enumerate(id_pairs):
+                uncertainties_id_pairs.append(results_dict[stat_str][tuple(id_pair)][pn]['uncertainty'])
+            uncertainty = np.mean(uncertainties_id_pairs)
+            uncertainties_stat_strs.append(uncertainty)
+            print(f"{stat_str}: {uncertainty:.4f}")
+
+        # idx_standard = stat_strs.index(stat_str_standard)
+        # idx_incl_density = stat_strs.index(stat_str_incl_density)
+        # uncertainty_change = (uncertainties_stat_strs[idx_incl_density]-uncertainties_stat_strs[idx_standard])/uncertainties_stat_strs[idx_standard]
+        # increased_precision = -uncertainty_change
+        # print(f"Increased precision from standard to beyond by: {100*increased_precision:.1f}%")
+        print()
+
+
 def print_uncertainty_results_abstract(results_dict, params, id_pairs, prior_dict):
     for j, pn in enumerate(params):    
 
@@ -438,7 +492,9 @@ def print_uncertainty_results_abstract(results_dict, params, id_pairs, prior_dic
         uncertainties_stat_strs = []
         for stat_str in stat_strs:
             uncertainties_id_pairs = []
-            for i, id_pair in enumerate(id_pairs):
+            for _, id_pair in enumerate(id_pairs):
+                print(stat_str)
+                print(results_dict[stat_str])
                 uncertainties_id_pairs.append(results_dict[stat_str][tuple(id_pair)][pn]['uncertainty'])
             uncertainty = np.mean(uncertainties_id_pairs)
             uncertainties_stat_strs.append(uncertainty)
@@ -478,23 +534,18 @@ def load_statistics(statistic, mock_name, id_pairs, verbose=False):
     return r_arr, y_train_arr
 
 
-def load_id_pairs_train(mock_name_train, train_tag=''):
+def load_id_pairs_train(mock_name_train, id_tag=''):
     ## ID values (cosmo and hod numbers)
-    if 'nclosest' in train_tag:
-        for tag in train_tag.split('_'):
-            if 'nclosest' in tag:
-                fn_train = f'../tables/id_pairs_train_{tag}.txt'
-    else:
-        fn_train = '../tables/id_pairs_train.txt'
+    fn_train = f'../tables/id_pairs_train{id_tag}.txt'
     id_pairs_train = np.loadtxt(fn_train, delimiter=',', dtype=int)
     print("original number of training ID pairs:", len(id_pairs_train))
     # Remove models that give zero or negative clustering statistic values
     # for all of the statistics (even the ones that are ok)
-    if mock_name_train=='aemulus_Msatmocks_train' and 'nclosest' not in train_tag:
+    if mock_name_train=='aemulus_Msatmocks_train' and 'nclosest' not in id_tag:
         bad_id_indices = [1296, 1335] #effectively the HOD IDs
         id_pairs_train = np.delete(id_pairs_train, bad_id_indices, axis=0)
         print("Deleted bad ID pairs with indices", bad_id_indices)
-    if mock_name_train=='aemulus_fmaxmocks_train':
+    if mock_name_train=='aemulus_fmaxmocks_train' and 'nclosest' not in id_tag:
         bad_id_indices = [2228, 3208] #effectively the HOD IDs 
         id_pairs_train = np.delete(id_pairs_train, bad_id_indices, axis=0)
         print("Deleted bad ID pairs with indices", bad_id_indices)
@@ -503,14 +554,9 @@ def load_id_pairs_train(mock_name_train, train_tag=''):
     return id_pairs_train 
 
 
-def load_id_pairs_test(train_tag=''):
+def load_id_pairs_test(id_tag=''):
     ### ID values (cosmo and hod numbers)
-    if 'nclosest' in train_tag:
-        for tag in train_tag.split('_'):
-            if 'nclosest' in tag:
-                fn_test = f'../tables/id_pairs_test_{tag}.txt'
-    else:
-        fn_test = '../tables/id_pairs_test.txt'
+    fn_test = f'../tables/id_pairs_test{id_tag}.txt'
     id_pairs_test = np.loadtxt(fn_test, delimiter=',', dtype=int)
     return id_pairs_test 
     

@@ -21,7 +21,7 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
     mock_name_glam = 'glam'
     cov_dir = '../covariances'
     comb_tag = '_smooth'
-    if inflate_upf_err:
+    if inflate_upf_err and 'upf' in stat_str:
         inflate_factor = 3
         comb_tag += f'_inflateupferr{inflate_factor}nox'
 
@@ -86,7 +86,7 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
         print("Mode not recognized!")
     
     statistics = stat_str.split('_')
-    if inflate_upf_err:
+    if inflate_upf_err and 'upf' in stat_str:
         print("Inflating upf error")
         nbins = 9
         i_upf = statistics.index('upf')

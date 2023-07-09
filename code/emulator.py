@@ -30,7 +30,8 @@ class Emulator(object):
     def __init__(self, statistic, scaling, model_fn, scaler_x_fn, scaler_y_fn,
                  err_fn, bins=list(range(9)), 
                  train_mode=False, test_mode=False, predict_mode=False,
-                 mock_name_train='aemulus_fmaxmocks_train', mock_name_test='aemulus_fmaxmocks_test'):
+                 mock_name_train='aemulus_fmaxmocks_train', mock_name_test='aemulus_fmaxmocks_test',
+                 id_tag=''):
         assert np.any(np.array([train_mode, test_mode, predict_mode])), "At least one mode must be True!"
         self.statistic = statistic
         self.model_fn = model_fn
@@ -45,6 +46,7 @@ class Emulator(object):
             assert "George" in model_fn, "Using fewer than all the bins only implemented for George emu!"
         self.mock_name_train = mock_name_train
         self.mock_name_test = mock_name_test
+        self.id_tag = id_tag
         # assert self.mock_tag_train in ['_aemulus_train', '_aemulus_Msatmocks_train', '_aemulus_fmaxmocks_train'], 'Training mock tag not recognized!'
         # assert self.mock_tag_test in ['_aemulus_test', '_aemulus_Msatmocks_test', '_aemulus_fmaxmocks_test'], 'Testing mock tag not recognized!'
 
@@ -81,7 +83,7 @@ class Emulator(object):
         
         ### ID values (cosmo and hod numbers)
         # ok to pass model_fn instead of train tag bc the former contains the latter
-        self.id_pairs_train = utils.load_id_pairs_train(self.mock_name_train, self.model_fn)
+        self.id_pairs_train = utils.load_id_pairs_train(self.mock_name_train, id_tag=self.id_tag)
         self.n_train = len(self.id_pairs_train)
         print("N train:", self.n_train)
         ### x values (data, cosmo and hod values)
@@ -131,7 +133,7 @@ class Emulator(object):
 
         ### ID values (cosmo and hod numbers)
 
-        self.id_pairs_test = utils.load_id_pairs_test()
+        self.id_pairs_test = utils.load_id_pairs_test(id_tag=self.id_tag)
         self.n_test = self.id_pairs_test.shape[0]
         print("N test ids:", self.n_test)
         ### x values (data, cosmo and hod values)

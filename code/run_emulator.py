@@ -5,22 +5,25 @@ import utils
 
 
 def main():
+    # TODO make sure to manually update train_tag_extra w any changes!
     #train_tag_extra = '_errstdev_Msatmocks_uchuuchi2nclosest2000'
-    train_tag_extra = '_errstdev_fmaxmocks'
+    train_tag_extra = '_errstdev_fmaxmocks_uchuuchi2nclosest2000'
     #statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
     #statistics = ['wp', 'xi', 'xi2']
     #statistics = ['upf', 'mcf']
-    statistics = ['upf']
+    #statistics = ['xi2', 'upf']
+    statistics = ['mcf']
     scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
-
+    id_tag = '_aemulus_fmaxmocks_uchuuchi2nclosest2000'
     for i in range(len(statistics)):    
         run(statistics[i], scalings[i], train_tag_extra=train_tag_extra,
-            train_mode=True, test_mode=True)
+            train_mode=True, test_mode=True, id_tag=id_tag)
 
 
 def run(statistic, scaling, emu_name='George', max_iter=1000,
         mock_name_train='aemulus_fmaxmocks_train', mock_name_test='aemulus_fmaxmocks_test',
-        train_tag_extra='', train_mode=True, test_mode=True):
+        train_tag_extra='', train_mode=True, test_mode=True,
+        id_tag=''):
 
     #train_tag = f'_{emu_name}_{scaling}'
     #train_tag = f'_{emu_name}_{scaling}_errstdev_Msatmocks_kM32ExpConst2'
@@ -40,7 +43,8 @@ def run(statistic, scaling, emu_name='George', max_iter=1000,
     print("Constructing emu")
     emu = Emu(statistic, scaling, model_fn, scaler_x_fn, scaler_y_fn, err_fn,
             train_mode=train_mode, test_mode=test_mode,
-            mock_name_train=mock_name_train, mock_name_test=mock_name_test)
+            mock_name_train=mock_name_train, mock_name_test=mock_name_test,
+            id_tag=id_tag)
 
     if train_mode:
         print("Training")

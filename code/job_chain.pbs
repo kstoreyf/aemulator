@@ -3,7 +3,8 @@
 ##PBS -N chains_xi_xi2_aemulus_fmaxmocks_test_c0h0_fixgammaf_minscale0.cfg
 ##PBS -N chain_statset_singles_c1h12
 ##PBS -N chain_uchuu_wp_xi_xi2_upf_mcf_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle_uchuuchi2nclosest2000
-#PBS -N chain_wp_xi_xi2_upf_mcf_uchuu_aemulus_fmaxmocks
+#PBS -N chain_wp_xi_xi2_uchuu_aemulus_fmaxmocks_wpximaxscale6
+##PBS -N chain_wp_xi_xi2_upf_mcf_uchuu_aemulus_fmaxmocks_inflateupferr3nox
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=24
 #PBS -m ae
@@ -38,7 +39,9 @@ conda activate aem
 #python run_chain_mock.py ../chains/configs/chains_wp80_xi_xi2_upf_mcf_uchuu_wpmaxscale6.cfg
 #python run_chain_mock.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_uchuu_Msatmocks_wpmaxscale6.cfg
 #python run_chain_mock.py ../chains/configs/chains_wp_xi_xi2_upf_mcf_uchuu_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle_uchuuchi2nclosest2000.cfg
-python run_chain_mock.py /home/users/ksf293/aemulator/chains/configs/chains_wp_xi_xi2_upf_mcf_uchuu_aemulus_fmaxmocks.cfg
+#python run_chain_mock.py /home/users/ksf293/aemulator/chains/configs/chains_wp_xi_xi2_upf_uchuu_aemulus_fmaxmocks.cfg
+python run_chain_mock.py /home/users/ksf293/aemulator/chains/configs/chains_wp_xi_xi2_uchuu_aemulus_fmaxmocks_wpximaxscale6.cfg
+#python run_chain_mock.py /home/users/ksf293/aemulator/chains/configs/chains_wp_xi_xi2_upf_mcf_uchuu_aemulus_fmaxmocks_inflateupferr3nox.cfg
 #mprof run -C python run_chain.py ../chains/configs/chains_wp_c1h12_covsg1_nthreads12.cfg
 #python -m memory_profiler run_chain.py ../chains/configs/chains_wp_xi_upf_mcf_c1h12_covsg1.cfg
 #mprof run -C python run_chain.py ../chains/configs/chains_wp_xi_upf_mcf_xi2_c1h12_covsg1.cfg
