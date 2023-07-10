@@ -27,8 +27,8 @@ def main():
     #                       param_tag='_fixgammaf')
  
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']
-    #stat_strs = ['wp_xi_xi2_upf', 'wp_xi_xi2_mcf']
-    stat_strs = ['wp_xi_xi2']
+    stat_strs = ['wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
+    #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
     for stat_str in stat_strs:
       config_uchuu(stat_str)
 
@@ -99,10 +99,12 @@ def config_uchuu(stat_str):
 
     infl_tag = ''
     #infl_tag = '_inflateupferr3nox'
-    comb_tag = '_smooth'+infl_tag
-    #cov_tag_extra = '_uchuuchi2nclosest2000'
-    cov_tag_extra = ''
-    config_tag = f'{mock_tag}{cov_tag_extra}{infl_tag}_wpximaxscale6'
+    #comb_tag = '_smooth'+infl_tag
+    comb_tag = '_smooth_covnegfix'+infl_tag
+    cov_tag_extra = '_uchuuchi2nclosest2000'
+    #cov_tag_extra = ''
+    #config_tag = f'{mock_tag}{cov_tag_extra}{infl_tag}_wpximaxscale6'
+    config_tag = f'{mock_tag}{cov_tag_extra}_covnegfix{infl_tag}_wpximaxscale6'
     #config_tag = f'_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle{cov_tag_extra}{infl_tag}'
     #config_tag = '_Msatmocks_wpmaxscale6'
 

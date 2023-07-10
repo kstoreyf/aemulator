@@ -127,7 +127,6 @@ def run(chain_params_fn):
 
     print("Building emulators")
     emus = [None]*n_stats
-    mock_tag_train = '_'+mock_name_train
     for i, statistic in enumerate(statistics):
         Emu = utils.get_emu(emu_names[i])
         
@@ -142,8 +141,14 @@ def run(chain_params_fn):
         #err_fn = f"../covariances/stdev_aemulus_{statistic}_hod3_test0.dat"
         err_fn = f"../covariances/stdev_{mock_name_test}_{statistic}_hod3_test0.dat"
 
+        # TODO probs want to add id_tag to configs, this is a #hack for now
+        id_tag = ''
+        if 'fmaxmocks_uchuuchi2nclosest2000' in train_tags_extra[i]:
+            id_tag = '_aemulus_fmaxmocks_uchuuchi2nclosest2000'
+
         emu = Emu(statistic, scalings[i], model_fn, scaler_x_fn, scaler_y_fn, err_fn, 
-                  bins=bins[i], predict_mode=True, mock_name_train=mock_name_train)
+                  bins=bins[i], predict_mode=True, mock_name_train=mock_name_train,
+                  id_tag=id_tag)
         emu.load_model()
         emus[i] = emu
         print(f"Emulator for {statistic} built with train_tag {train_tag}")
@@ -153,7 +158,8 @@ def run(chain_params_fn):
     start = time.time()
     res = chain.run_mcmc(emus, param_names_vary, ys_observed, cov, chain_params_fn, chain_results_fn,       
                          mock_name_train, fixed_params=fixed_params,
-                         n_threads=n_threads, dlogz=dlogz, seed=seed)
+                         n_threads=n_threads, dlogz=dlogz, seed=seed,
+                         data_name=data_name)
     end = time.time()
     print(f"Time: {(end-start)/60.0} min ({(end-start)/3600.} hrs) [{(end-start)/(3600.*24.)} days]")
                                 

@@ -293,7 +293,7 @@ def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_lab
     # Make dict of bounds for plot ranges
     bounds = utils.get_bounds(mock_name_hod)
     sample_arr = []
-    for i, chaintag in enumerate(chaintags):
+    for _, chaintag in enumerate(chaintags):
 
         chain_fn = f'../chains/param_files/chain_params_{chaintag}.h5'
         fw = h5py.File(chain_fn, 'r')
@@ -328,7 +328,7 @@ def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_lab
 
         # param_labels is in utils
         labels = [param_labels[pn] for pn in params_toplot]
-        ranges = [bounds[pn] for pn in params_toplot]
+        #ranges = [bounds[pn] for pn in params_toplot]
 
         #[-1] bc just care about final evidence value
         weights = np.exp(lnweight - lnevidence[-1])

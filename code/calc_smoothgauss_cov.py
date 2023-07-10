@@ -30,10 +30,12 @@ def run(mock_tag, stat_str, cov_tag_extra=''):
 
 
 def smooth_cov_gaussian(cov_orig, statistics, nbins=9, width=1):
+    print("orig:", cov_orig)
     corr_orig = utils.reduced_covariance(cov_orig)
     corr_convolved = smooth_corr_gaussian(corr_orig, statistics, nbins=nbins, width=width)
 
     # normalize corr
+    print("convovled")
     corr_convolved_norm = utils.reduced_covariance(corr_convolved)
     cov_smooth = utils.correlation_to_covariance(corr_convolved_norm, cov_orig)
     return cov_smooth

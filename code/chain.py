@@ -17,8 +17,8 @@ import utils
 os.environ["OMP_NUM_THREADS"] = "1"
 
 
-_param_names_cosmo = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w']
-_param_names_hod = ['M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
+# _param_names_cosmo = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w']
+# _param_names_hod = ['M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
 
 def log_likelihood(theta, param_names, fixed_params, ys_observed, cov):
     s = time.time()
@@ -37,6 +37,9 @@ def log_likelihood(theta, param_names, fixed_params, ys_observed, cov):
     # print('ys_pred:', emu_pred)
     diff = (np.array(emu_pred) - np.array(ys_observed))/np.array(ys_observed) #fractional error
     diff = diff.flatten()
+    # print('cov', cov)
+    # print('diff:', diff)
+
     # the solve is a better way to get the inverse
     like = -0.5 * np.dot(diff, np.linalg.solve(cov, diff))
     e = time.time()
@@ -148,8 +151,12 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
 
     print("Dynesty sampling (static) - nongen")
     global _emus, _hod_bounds, _cosmo_bounds
+    global _param_names_cosmo, _param_names_hod
     global _hypercube_prior_cov, _hypercube_prior_cov_sqrt, _hypercube_prior_means
+    
     _emus = emus
+    _param_names_cosmo, _ = utils.load_cosmo_params(data_name)
+    _param_names_hod, _ = utils.load_hod_params(mock_name_hod, data_name=data_name)
     _hod_bounds = utils.get_hod_bounds(mock_name_hod)
     _cosmo_bounds = utils.get_cosmo_bounds(mock_name_hod)
     num_params = len(param_names)

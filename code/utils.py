@@ -38,15 +38,15 @@ r_labels = {'wp':r'$r_\mathrm{p}$ ($h^{-1}\,\mathrm{Mpc}$)',
             'wp80':r'$r_\mathrm{p}$ ($h^{-1}\,\mathrm{Mpc}$)'}
 
 cosmo_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w"]
-hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
+hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env", "f_max"]
 cosmo_withf_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w", "f"]
-hod_nof_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f_env", "delta_env", "sigma_env"]
+hod_nof_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f_env", "delta_env", "sigma_env", "f_max"]
 key_param_names = ['Omega_m', 'sigma_8', 'M_sat', 'v_bc', 'v_bs', 'f', 'f_env']
 ab_param_names = ["f_env", "delta_env", "sigma_env"]
 param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w", \
-               "M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
+               "M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env", "f_max"]
 param_names_freorder = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w", "f", \
-                        "M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f_env", "delta_env", "sigma_env"]     
+                        "M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f_env", "delta_env", "sigma_env", "f_max"]     
 param_labels = {'Omega_m': '\Omega_\mathrm{m}',
                 'Omega_b': '\Omega_\mathrm{b}',
                 'sigma_8': '\sigma_\mathrm{8}',
@@ -65,6 +65,7 @@ param_labels = {'Omega_m': '\Omega_\mathrm{m}',
                 'f_env': 'f_\mathrm{env}',
                 'delta_env': '\delta_\mathrm{env}',
                 'sigma_env': '\sigma_\mathrm{env}',
+                'f_max': 'f_\mathrm{max}',
                 'fsigma8': '\gamma_\mathrm{f} \, f \, \sigma_\mathrm{8}'}
 
 def get_emu(emu_name):
@@ -77,25 +78,6 @@ def get_emu(emu_name):
                 'GeorgeOrig': emulator.EmulatorGeorgeOrig,
                 'PyTorch': emulator.EmulatorPyTorch}
     return emu_dict[emu_name]
-
-def load_cosmo_params_mock(mock_name):
-    cosmo_param_names = ["Omega_m", "Omega_b", "sigma_8", "h", "n_s", "N_eff", "w"]
-    if mock_name=='uchuu':
-        # from http://skiesanduniverses.org/Simulations/Uchuu/
-        # not sure about N_eff! pulled from Planck2015 table 5, rightmost col (https://arxiv.org/pdf/1502.01589.pdf)
-        # w??
-        cosmo_params = 0.3089, 0.0486, 0.8159, 0.6774, 0.9667, 3.04, -1
-    return cosmo_param_names, cosmo_params
-
-def load_hod_params_mock(mock_name):
-    hod_param_names = ["M_sat", "alpha", "M_cut", "sigma_logM", "v_bc", "v_bs", "c_vir", "f", "f_env", "delta_env", "sigma_env"]
-    if mock_name=='uchuu':
-        # made using SHAM! but we do know gamma_f=1
-        hod_params = [float("NaN")]*len(hod_param_names)
-        #idx_f = hod_params.index("f")
-        idx_f = hod_param_names.index("f")
-        hod_params[idx_f] = 1.0
-    return hod_param_names, hod_params
 
 def load_cosmo_params(mock_name):
     # 7 cosmo params
@@ -151,7 +133,7 @@ def load_hod_params(mock_name, data_name=None):
     assert len(hod_param_names)==hod_params.shape[1], "Lengths of HOD names and params don't line up!"
     return hod_param_names, hod_params
 
-# Prior is the min and max of training set parameters, +/- 10% on either side
+# Prior is the min and max of training set parameters
 def get_hod_bounds(mock_name):
     hod_bounds = {}
     hod_param_names, hod_params = load_hod_params(mock_name)
@@ -550,7 +532,7 @@ def load_id_pairs_train(mock_name_train, id_tag=''):
         id_pairs_train = np.delete(id_pairs_train, bad_id_indices, axis=0)
         print("Deleted bad ID pairs with indices", bad_id_indices)
     n_train = len(id_pairs_train)
-    print("N train:", n_train)
+    print("(load_id_pairs_train) N_train:", n_train)
     return id_pairs_train 
 
 

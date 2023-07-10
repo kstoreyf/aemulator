@@ -20,7 +20,7 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
 
     mock_name_glam = 'glam'
     cov_dir = '../covariances'
-    comb_tag = '_smooth'
+    comb_tag = '_smooth_covnegfix'
     if inflate_upf_err and 'upf' in stat_str:
         inflate_factor = 3
         comb_tag += f'_inflateupferr{inflate_factor}nox'
@@ -61,7 +61,6 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
         cov_data = cov_glam*(L_glam/L_uchuu)**3
         #cov_emu = cov_smooth_emuperf - cov_aemulus_5box
         cov_emu = cov_emuperf - cov_aemulus_5box
-        cov_combined = cov_emu + cov_data
 
     elif mode=='glam_for_aemulus': 
         # below is for using the glam covmat for recovery on aemulus
@@ -80,7 +79,6 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
 
         # L_aemulus/L_uchuu because uchuu is larger volume so should have smaller cov
         cov_data = cov_aemulus_5box*(L_aemulus/L_uchuu)**3
-        cov_combined = cov_emu + cov_data 
 
     else:
         print("Mode not recognized!")
@@ -107,8 +105,29 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
         cov_data[upf_mask] *= inflate_factor**2 #because we're scaling the variances
         print(cov_data[i_start:i_end, i_start:i_end])
 
+    # cov emu could be (a bit) negative if performance better than 
+    # sample variance estimate; set to val of one above/below it #hack for now
+    i_neg = np.diag(cov_emu) < 0
+    if np.sum(i_neg)>0:
+        print("Fixing negative cov_emu values!")
+        idx_neg = np.arange(len(i_neg))[i_neg]
+        print("idx_neg:", idx_neg)
+        for ii in idx_neg:
+            if ii<cov_emu.shape[0]-1:
+                val_fix = cov_emu[ii+1,ii+1]
+            else:
+                val_fix = cov_emu[ii-1,ii-1]
+            cov_emu[ii,ii] = val_fix
+    print('emu fixed:', cov_emu)
+
     cov_combined = cov_emu + cov_data
+    print("nans?")
+    print(np.sum(np.isnan(cov_emu)))
+    print(np.sum(np.isnan(cov_data)))
+    print(np.sum(np.isnan(cov_combined)))
     cov_combined = csc.smooth_cov_gaussian(cov_combined, statistics, nbins=9, width=1)
+    print(np.sum(np.isnan(cov_combined)))
+    print('combined:', cov_combined)
 
     # save
     np.savetxt(cov_combined_fn, cov_combined)

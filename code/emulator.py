@@ -83,9 +83,10 @@ class Emulator(object):
         
         ### ID values (cosmo and hod numbers)
         # ok to pass model_fn instead of train tag bc the former contains the latter
+        print(self.mock_name_train, self.id_tag)
         self.id_pairs_train = utils.load_id_pairs_train(self.mock_name_train, id_tag=self.id_tag)
         self.n_train = len(self.id_pairs_train)
-        print("N train:", self.n_train)
+        print("(emulator.py set_training_data) N_train:", self.n_train)
         ### x values (data, cosmo and hod values)
 
         # cosmos_train_fn = '../tables/cosmology_camb_full.dat'
