@@ -15,7 +15,8 @@ def main():
     #config_prior()
 
     #stat_strs = np.loadtxt('../tables/statistic_sets_scale_analysis.txt', dtype=str)
-    #generate_scale_analysis_set(stat_strs, mode='minscales')
+    stat_strs = ['wp_xi_xi2_mcf']
+    generate_scale_analysis_set(stat_strs, mode='minscales')
     #generate_scale_analysis_set(stat_strs, mode='maxscales')
 
     # stat_strs = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
@@ -27,10 +28,15 @@ def main():
     #                       param_tag='_fixgammaf')
  
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']
-    stat_strs = ['wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
+    #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf', 'wp_xi_xi2_upf_mcf', 'upf']
+    #stat_strs = ['wp_xi', 'wp_upf', 'wp_mcf']
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
-    for stat_str in stat_strs:
-      config_uchuu(stat_str)
+    #stat_strs = ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2_mcf']
+    #stat_strs = ['wp_xi_xi2_upf_mcf']
+    #stat_strs = ['wp_xi_xi2']
+
+    # for stat_str in stat_strs:
+    #   config_uchuu(stat_str)
 
 
 def generate_single_mock(stat_strs):
@@ -98,17 +104,23 @@ def config_uchuu(stat_str):
     mock_name_test = 'aemulus_fmaxmocks_test'
 
     infl_tag = ''
-    #infl_tag = '_inflateupferr3nox'
+    #infl_tag = '_inflateupferr2nox'
     #comb_tag = '_smooth'+infl_tag
-    comb_tag = '_smooth_covnegfix'+infl_tag
+    comb_tag = '_smoothemuboth'+infl_tag
+    #comb_tag = '_smoothboth'+infl_tag
+    #comb_tag = '_smooth'+infl_tag
+    #comb_tag = '_smooth_covnegfix'+infl_tag
     cov_tag_extra = '_uchuuchi2nclosest2000'
     #cov_tag_extra = ''
-    #config_tag = f'{mock_tag}{cov_tag_extra}{infl_tag}_wpximaxscale6'
-    config_tag = f'{mock_tag}{cov_tag_extra}_covnegfix{infl_tag}_wpximaxscale6'
+    config_tag = f'{mock_tag}{cov_tag_extra}_smoothemuboth{infl_tag}_wpxiupfmaxscale6'
+    #config_tag = f'{mock_tag}{cov_tag_extra}_smoothemu{infl_tag}_wpximaxscale6'
+    #config_tag = f'{mock_tag}{cov_tag_extra}_smoothboth{infl_tag}_allmaxscale6'
+    #config_tag = f'{mock_tag}{cov_tag_extra}_covnegfix{infl_tag}_wpximaxscale6'
     #config_tag = f'_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle{cov_tag_extra}{infl_tag}'
     #config_tag = '_Msatmocks_wpmaxscale6'
 
-    param_tag = ''
+    #param_tag = ''
+    param_tag = '_fixgammaf'
     #param_tag = '_all'
     #param_tag = '_hodparams'
     save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{data_tag}{param_tag}{config_tag}.h5'
@@ -150,11 +162,26 @@ def config_uchuu(stat_str):
                 bins.append(list(range(0, 7)))
             else:
                 bins.append(list(range(0, 9)))
+    elif 'wpxiupfmaxscale6' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            #writing this way for wp to include "wp80", but not for xi bc of xi2
+            if 'wp' in statistics[i] or statistics[i]=='xi' or statistics[i]=='upf': 
+                bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
     elif 'upfmaxscale6' in config_tag:
         bins = []
         for i in range(len(statistics)):
             if statistics[i]=='upf':
                 bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    elif 'upfmaxscale0' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if statistics[i]=='upf':
+                bins.append([0])
             else:
                 bins.append(list(range(0, 9)))
     elif 'allmaxscale6' in config_tag:

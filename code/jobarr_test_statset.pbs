@@ -3,14 +3,16 @@
 ##PBS -N recovery70_chains_statset_addin_wpximaxscale6
 ##PBS -N recovery70_chains_statset_singles_maxscale6
 ##PBS -N recovery70_chains_statset_fixgammaf
-##PBS -N recovery70_chains_statset_minscales
-#PBS -N recovery70_chains_statset_maxscales
+##PBS -N recovery70_chains_statset_minscales_wp_xi_xi2_mcf
+##PBS -N recovery70_chains_statset_minscale0_wp_xi_xi2_mcf
+#PBS -N recovery70_chains_statset_maxscales_remaining
 # 1 full node for each chain
 #PBS -l nodes=1:ppn=24
 # test:
 ##PBS -t 0-0%1
 # full recovery suite of 70; number after % is number of nodes to use
-#PBS -t 0-69%3
+##PBS -t 0-69%6
+#PBS -t 0-2%3
 
 #PBS -o logs/$PBS_JOBNAME.out
 #PBS -j oe
@@ -38,9 +40,9 @@ echo "Running chain set for cosmo $cosmo, hod $hod"
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate aem
 
-#python run_chain_statset.py $cosmo $hod single _minscale0_wpmaxscale6
+#python run_chain_statset.py $cosmo $hod single _minscale0
 #python run_chain_statset.py $cosmo $hod single _minscale0_wpximaxscale6
 #python run_chain_statset_singles.py $cosmo $hod single _maxscale6
 #python run_chain_statset_singles.py $cosmo $hod single _minscale0 _fixgammaf
 #python run_chain_statset_minscales.py $cosmo $hod minscales
-python run_chain_statset_minscales.py $cosmo $hod maxscales
+python run_chain_statset_maxscales.py $cosmo $hod maxscales

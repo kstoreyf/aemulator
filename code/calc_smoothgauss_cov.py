@@ -54,7 +54,7 @@ def smooth_corr_gaussian(corr_orig, statistics, nbins=9, width=1):
         else:
             corr[ii,ii] = np.mean([corr[ii,ii+1], corr[ii,ii-1], corr[ii+1,ii], corr[ii-1,ii]])
     
-    # smooth with Gaussian kernel
+    # smooth with Gaussian kernel, square by square
     kernel = Gaussian2DKernel(width)
     #corr_convolved = np.zeros_like(corr)
     for i in range(nstats):
@@ -63,7 +63,7 @@ def smooth_corr_gaussian(corr_orig, statistics, nbins=9, width=1):
             corr_sub_convolved = convolve(corr_sub, kernel, boundary='extend')
             corr[i*nbins:(i+1)*nbins, j*nbins:(j+1)*nbins] = corr_sub_convolved
             
-    # replace diags bakc with orig
+    # replace diags back with orig
     diags_orig = np.diag(corr_orig)
     for ii in range(nstats*nbins):
         corr[ii,ii] = diags_orig[ii]

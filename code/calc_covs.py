@@ -14,20 +14,31 @@ def main():
     #stat_strs = ['mcf', 'wp_mcf']
     # mock_tag = '_aemulus_Msatmocks_test'
     #train_tag_extra = f'_errstdev_Msatmocks{cov_tag_extra}'
-    mock_tag = '_aemulus_fmaxmocks_test'
-    #cov_tag_extra = ''
-    #cov_tag_extra = '_uchuu'
-    #mode = None # for aemulus
-    #inflate_upf_err = False
 
+    # AEUMULUS
+    # stat_strs = ['wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
+    # mock_tag = '_aemulus_fmaxmocks_test'
+    # cov_tag_extra = ''
+    # mode = '' # for aemulus
+    # inflate_upf_err = False
+    # id_tag = ''
+
+    # UCHUU
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf', 'wp_xi_xi2_upf_mcf']
-    stat_strs = ['wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
-    #stat_strs = ['mcf']
+    #stat_strs = ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2_mcf']
+    stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']    
+    #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf', 'wp_xi_xi2_upf_mcf', 'upf']
+    #stat_strs = ['wp_xi', 'wp_upf', 'wp_mcf']
+    mock_tag = '_aemulus_fmaxmocks_test'
+    #stat_strs = ['upf']
     cov_tag_extra = '_uchuuchi2nclosest2000'
+    #cov_tag_extra = ''
     mode = 'glam_for_uchuu'
-    #mode = 'aemulus_for_uchuu'
     inflate_upf_err = False
-    id_tag = '_aemulus_fmaxmocks_uchuuchi2nclosest2000'
+    if 'uchuuchi2nclosest2000' in cov_tag_extra:
+        id_tag = '_aemulus_fmaxmocks_uchuuchi2nclosest2000'
+    else:
+        id_tag = ''
 
     train_tag_extra = f'_errstdev_fmaxmocks{cov_tag_extra}'
 

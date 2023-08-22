@@ -54,6 +54,7 @@ def run(chain_params_fn):
     dlogz = float(f.attrs['dlogz'])
     seed = f.attrs['seed']
     cov_fn = f.attrs['cov_fn']
+    print('cov_fn:', cov_fn)
 
     n_stats = len(statistics)
     n_bins_tot = 9

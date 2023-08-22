@@ -20,9 +20,13 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
 
     mock_name_glam = 'glam'
     cov_dir = '../covariances'
-    comb_tag = '_smooth_covnegfix'
+    #comb_tag = '_smooth_covnegfix'
+    comb_tag = '_smoothemuboth'
+    #comb_tag = '_smoothemuperf'
+    #comb_tag = '_smoothboth'
+    #comb_tag = '_smooth'
     if inflate_upf_err and 'upf' in stat_str:
-        inflate_factor = 3
+        inflate_factor = 2
         comb_tag += f'_inflateupferr{inflate_factor}nox'
 
     if mode=='glam_for_uchuu':
@@ -38,12 +42,12 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
         cov_glam = np.loadtxt(cov_glam_fn)
 
     cov_aemulus_fn = f'{cov_dir}/cov{mock_tag_cov}_{stat_str}_hod3_test0.dat'
-    #cov_emuperf_fn = f'{cov_dir}/cov_emuperf_{stat_str}_nonolap_hod3_test0_mean_test0.dat'
-    cov_emuperf_fn = f'{cov_dir}/cov_emuperf{mock_tag_cov}{cov_tag_extra}_{stat_str}_hod3_test0.dat'
-
     # TODO: check if i want to be using smoothgauss here! wasnt before, bc only smoothed after glam failed
-    #cov_smooth_emuperf_fn = f'{cov_dir}/cov_smoothgauss_emuperf{mock_tag_cov}{cov_tag_extra}_{stat_str}_hod3_test0.dat'
-    
+    if 'smoothboth' in comb_tag or 'smoothemuperf' in comb_tag:
+        cov_emuperf_fn = f'{cov_dir}/cov_smoothgauss_emuperf{mock_tag_cov}{cov_tag_extra}_{stat_str}_hod3_test0.dat'
+    else:
+        cov_emuperf_fn = f'{cov_dir}/cov_emuperf{mock_tag_cov}{cov_tag_extra}_{stat_str}_hod3_test0.dat'
+
     # load covs
     cov_aemulus = np.loadtxt(cov_aemulus_fn)
     cov_emuperf = np.loadtxt(cov_emuperf_fn)
@@ -120,12 +124,21 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
             cov_emu[ii,ii] = val_fix
     print('emu fixed:', cov_emu)
 
+    # must be equal to not get emuperf
+    if comb_tag=='_smoothemu' or comb_tag=='_smoothemuboth':
+        cov_emu = csc.smooth_cov_gaussian(cov_emu, statistics, nbins=9, width=1)
     cov_combined = cov_emu + cov_data
+
     print("nans?")
     print(np.sum(np.isnan(cov_emu)))
     print(np.sum(np.isnan(cov_data)))
     print(np.sum(np.isnan(cov_combined)))
-    cov_combined = csc.smooth_cov_gaussian(cov_combined, statistics, nbins=9, width=1)
+
+
+    # not smoothemu or smoothemuperf
+    if comb_tag=='_smooth' or comb_tag=='_smoothboth' or comb_tag=='_smoothemuboth':
+        print("Smoothing final cov")
+        cov_combined = csc.smooth_cov_gaussian(cov_combined, statistics, nbins=9, width=1)
     print(np.sum(np.isnan(cov_combined)))
     print('combined:', cov_combined)
 

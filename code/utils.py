@@ -475,8 +475,8 @@ def print_uncertainty_results_abstract(results_dict, params, id_pairs, prior_dic
         for stat_str in stat_strs:
             uncertainties_id_pairs = []
             for _, id_pair in enumerate(id_pairs):
-                print(stat_str)
-                print(results_dict[stat_str])
+                #print(stat_str)
+                #print(results_dict[stat_str])
                 uncertainties_id_pairs.append(results_dict[stat_str][tuple(id_pair)][pn]['uncertainty'])
             uncertainty = np.mean(uncertainties_id_pairs)
             uncertainties_stat_strs.append(uncertainty)

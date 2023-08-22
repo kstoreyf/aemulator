@@ -149,6 +149,11 @@ def get_cov_means_for_hypercube_prior(idxs_cosmo_vary):
 def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results_fn, mock_name_hod, fixed_params={},
              n_threads=1, dlogz=0.01, seed=None, data_name=''):
 
+    #cov = np.diag(np.ones(cov.shape[0]))
+    #cov = np.diag(np.diag(cov))
+    #print("DIAG COV")
+    #print(cov)
+
     print("Dynesty sampling (static) - nongen")
     global _emus, _hod_bounds, _cosmo_bounds
     global _param_names_cosmo, _param_names_hod
@@ -157,6 +162,9 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
     _emus = emus
     _param_names_cosmo, _ = utils.load_cosmo_params(data_name)
     _param_names_hod, _ = utils.load_hod_params(mock_name_hod, data_name=data_name)
+    # _param_names_cosmo = ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w']
+    # _param_names_hod = ['M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env']
+
     _hod_bounds = utils.get_hod_bounds(mock_name_hod)
     _cosmo_bounds = utils.get_cosmo_bounds(mock_name_hod)
     num_params = len(param_names)
@@ -238,7 +246,7 @@ def run_mcmc(emus, param_names, ys_observed, cov, chain_params_fn, chain_results
 
         # Run sampler
         sampler.run_nested(dlogz=dlogz,
-                           print_progress=False)
+                           print_progress=True)
         res = sampler.results
         print(res.summary())
 

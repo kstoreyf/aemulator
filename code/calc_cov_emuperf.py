@@ -47,7 +47,7 @@ def run(mock_tag, stat_str, train_tag_extra='', cov_tag_extra='',
     #np.savetxt(save_fn_p84_perf, p84)
 
 
-def load_fracerrs_aemulus(statistic, mock_tag, train_tag, id_tag):
+def load_fracerrs_aemulus(statistic, mock_tag, train_tag, id_tag=''):
 
     testing_dir = f'/mount/sirocco1/ksf293/clust/results{mock_tag}_mean/results_{statistic}'    
     predictions_dir = f'../predictions/predictions_{statistic}{train_tag}'
@@ -59,10 +59,10 @@ def load_fracerrs_aemulus(statistic, mock_tag, train_tag, id_tag):
 
     for cosmo, hod in id_pairs_test:
  
-        id_tag = f'cosmo_{cosmo}_HOD_{hod}'
-        ntest, ptest = np.loadtxt(f'{testing_dir}/{statistic}_{id_tag}_mean.dat', 
+        id_label = f'cosmo_{cosmo}_HOD_{hod}'
+        _, ptest = np.loadtxt(f'{testing_dir}/{statistic}_{id_label}_mean.dat', 
                                 delimiter=',', unpack=True)
-        npredict, ppredict = np.loadtxt(f'{predictions_dir}/{statistic}_{id_tag}.dat', 
+        _, ppredict = np.loadtxt(f'{predictions_dir}/{statistic}_{id_label}.dat', 
                                 delimiter=',', unpack=True)
         
         ptests.append(ptest)
