@@ -381,7 +381,8 @@ def plot_contours(chaintags, mock_name_hod='aemulus_fmaxmocks_train', legend_lab
     g.triangle_plot(sample_arr, filled=filleds, contour_colors=colors, names=params_toplot,
                     legend_labels=legend_labels, markers=vertical_markers_toplot, 
                     title_limit=0, legend_loc=legend_loc,
-                    marker_args=marker_args, axis_marker_color='red',
+                    marker_args=marker_args, 
+                    #axis_marker_color='red',
                     #param_limits=bounds,
                     )
 
@@ -394,7 +395,7 @@ def plot_contours(chaintags, mock_name_hod='aemulus_fmaxmocks_train', legend_lab
 
                 # 2d
                 g.add_line([bound_min_i,bound_max_i],[bound_min_j,bound_min_j], ax=[j,i],
-                        lw=1, ls='-', color='grey', zorder=100)
+                        lw=1, ls='-', color='grey', zorder=100, label='prior')
                 g.add_line([bound_min_i,bound_max_i],[bound_max_j,bound_max_j], ax=[j,i],
                         lw=1, ls='-', color='grey', zorder=100)
                 g.add_line([bound_min_i,bound_min_i],[bound_min_j,bound_max_j], ax=[j,i],
@@ -403,11 +404,12 @@ def plot_contours(chaintags, mock_name_hod='aemulus_fmaxmocks_train', legend_lab
                         lw=1, ls='-', color='grey', zorder=100)
                 
         for i in range(n_params):
+            bound_min_i, bound_max_i = bounds[params_toplot[i]] 
             g.add_x_marker(bound_min_i, ax=[i,i],
                     lw=1, ls='-', color='grey', zorder=100)
             g.add_x_marker(bound_max_i, ax=[i,i],
                     lw=1, ls='-', color='grey', zorder=100)
-            
+
     return g
 
 
