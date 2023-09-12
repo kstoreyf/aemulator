@@ -290,7 +290,7 @@ def plot_contours(chaintags, mock_name_hod='aemulus_fmaxmocks_train', legend_lab
                   params_toplot=None, colors=None,
                   legend_loc='upper center', legend_fontsize=20,
                   vertical_markers=None, vertical_marker_color='grey', alpha=0.4,
-                  chaintag_prior=None):
+                  chaintag_prior=None, plot_hard_prior=False):
     # Make dict of bounds for plot ranges
     bounds = utils.get_bounds(mock_name_hod)
     sample_arr = []
@@ -378,16 +378,36 @@ def plot_contours(chaintags, mock_name_hod='aemulus_fmaxmocks_train', legend_lab
     g.settings.axis_marker_lw = 1.0
     g.settings.axis_marker_color = 'dimgrey'
 
-
-    print(bounds)
-    print(params_toplot)
     g.triangle_plot(sample_arr, filled=filleds, contour_colors=colors, names=params_toplot,
                     legend_labels=legend_labels, markers=vertical_markers_toplot, 
                     title_limit=0, legend_loc=legend_loc,
                     marker_args=marker_args, axis_marker_color='red',
                     #param_limits=bounds,
                     )
-    #g.add_param_markers(vertical_markers_toplot, color='green')
+
+    if plot_hard_prior:
+        n_params = len(params_toplot)
+        for i in range(n_params-1):
+            for j in range(i+1, n_params):
+                bound_min_i, bound_max_i = bounds[params_toplot[i]] 
+                bound_min_j, bound_max_j = bounds[params_toplot[j]] 
+
+                # 2d
+                g.add_line([bound_min_i,bound_max_i],[bound_min_j,bound_min_j], ax=[j,i],
+                        lw=1, ls='-', color='grey', zorder=100)
+                g.add_line([bound_min_i,bound_max_i],[bound_max_j,bound_max_j], ax=[j,i],
+                        lw=1, ls='-', color='grey', zorder=100)
+                g.add_line([bound_min_i,bound_min_i],[bound_min_j,bound_max_j], ax=[j,i],
+                        lw=1, ls='-', color='grey', zorder=100)
+                g.add_line([bound_max_i,bound_max_i],[bound_min_j,bound_max_j], ax=[j,i],
+                        lw=1, ls='-', color='grey', zorder=100)
+                
+        for i in range(n_params):
+            g.add_x_marker(bound_min_i, ax=[i,i],
+                    lw=1, ls='-', color='grey', zorder=100)
+            g.add_x_marker(bound_max_i, ax=[i,i],
+                    lw=1, ls='-', color='grey', zorder=100)
+            
     return g
 
 
