@@ -286,15 +286,16 @@ def plot_accuracy_figure(statistics, train_tags, mock_tag_test='_aemulus_test',
 
 
 
-def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_labels=[],
+def plot_contours(chaintags, mock_name_hod='aemulus_fmaxmocks_train', legend_labels=[],
                   params_toplot=None, colors=None,
                   legend_loc='upper center', legend_fontsize=20,
-                  vertical_markers=None, vertical_marker_color='grey', alpha=0.4):
+                  vertical_markers=None, vertical_marker_color='grey', alpha=0.4,
+                  chaintag_prior=None):
     # Make dict of bounds for plot ranges
     bounds = utils.get_bounds(mock_name_hod)
     sample_arr = []
-    for _, chaintag in enumerate(chaintags):
 
+    def _load_samps(chaintag, params_toplot, smooth_scale_1D=-1, smooth_scale_2D=-1):
         chain_fn = f'../chains/param_files/chain_params_{chaintag}.h5'
         fw = h5py.File(chain_fn, 'r')
         param_names = fw.attrs['param_names_vary']
@@ -334,14 +335,41 @@ def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_lab
         weights = np.exp(lnweight - lnevidence[-1])
         weights = weights.flatten()
 
-        samps = getdist.MCSamples(names=params_toplot, labels=labels)
+        # smoothing: https://getdist.readthedocs.io/en/latest/analysis_settings.html#analysis-settings
+        samps = getdist.MCSamples(names=params_toplot, labels=labels,
+                                  sampler='nested', #added this,
+                                  settings={'smooth_scale_1D':smooth_scale_1D,#-1 is default,
+                                            'smooth_scale_2D':smooth_scale_2D
+                                            }, 
+                                  )
         samps.setSamples(samples, weights=weights)
-        sample_arr.append(samps)
+        return samps, vertical_markers_toplot
+        #sample_arr.append(samps)
+        # if 'prior' in chaintag:
+        #     samps_prior = samps
+        # else:
+        #     sample_arr.append(samps)
+
+    filleds = []
+    if chaintag_prior is not None:
+        samps, _ = _load_samps(chaintag_prior, params_toplot, smooth_scale_1D=12, smooth_scale_2D=4)
+        sample_arr.append(samps) 
+        legend_labels = ['prior'] + legend_labels
+        colors = ['grey'] + colors
+        filleds.append(False)
+
+    for _, chaintag in enumerate(chaintags):
+        samps, vertical_markers_toplot = _load_samps(chaintag, params_toplot)
+        sample_arr.append(samps) 
+        filleds.append(True)
 
     marker_args = {'color': vertical_marker_color}
 
 
     g = getdist.plots.get_subplot_plotter()
+
+    #g.smooth_scale_1d = 10
+
     g.settings.alpha_filled_add=alpha
     g.settings.figure_legend_frame = False
     g.settings.legend_fontsize = legend_fontsize
@@ -349,11 +377,17 @@ def plot_contours(chaintags, mock_name_hod='aemulus_Msatmocks_train', legend_lab
     g.settings.axes_fontsize = 16
     g.settings.axis_marker_lw = 1.0
     g.settings.axis_marker_color = 'dimgrey'
-    fig = plt.gcf()
-    g.triangle_plot(sample_arr, filled=True, contour_colors=colors, names=params_toplot,
-                   legend_labels=legend_labels, markers=vertical_markers_toplot, 
-                   title_limit=0, legend_loc=legend_loc,
-                    marker_args=marker_args, axis_marker_color='red')
+
+
+    print(bounds)
+    print(params_toplot)
+    g.triangle_plot(sample_arr, filled=filleds, contour_colors=colors, names=params_toplot,
+                    legend_labels=legend_labels, markers=vertical_markers_toplot, 
+                    title_limit=0, legend_loc=legend_loc,
+                    marker_args=marker_args, axis_marker_color='red',
+                    #param_limits=bounds,
+                    )
+    #g.add_param_markers(vertical_markers_toplot, color='green')
     return g
 
 
