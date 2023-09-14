@@ -120,7 +120,7 @@ def load_hod_params(mock_name, data_name=None):
         hod_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/test_mocks/HOD_test_np11_n5000_new_f_env_Msat.dat'
     elif mock_name=='aemulus_Msatmocks_train':
         hod_fn = '/mount/sirocco2/zz681/emulator/CMASSLOWZ_Msat/training_mocks/HOD_design_np11_n5000_new_f_env_Msat.dat'
-    elif mock_name=='aemulus_fmaxmocks_test':
+    elif 'aemulus_fmaxmocks_test' in mock_name: #to account for plus and minus (same bc only Mmin changes, not a free param)
         hod_fn = '/mount/sirocco1/zz681/emulator/CMASSLOWZ_Msat_fmax_new/test_mocks/HOD_test_np11_n5000_new_f_env_Msat_fmax_new.dat'
     elif mock_name=='aemulus_fmaxmocks_train':
         hod_fn = '/mount/sirocco1/zz681/emulator/CMASSLOWZ_Msat_fmax_new/training_mocks/HOD_design_np11_n5000_new_f_env_Msat_fmax_new.dat'

@@ -10,7 +10,7 @@
 ##PBS -N chain_wp_xi_xi2_upf_mcf_uchuu_aemulus_fmaxmocks_inflateupferr3nox
 ##PBS -N chains_wp_xi_xi3_upf_mcf_uchuu_fixgammaf_aemulus_fmaxmocks_smoothboth_allmaxscale6
 ##PBS -N chains_wp_xi_xi2_uchuu_fixgammaf_aemulus_fmaxmocks_uchuuchi2nclosest2000_smoothemu_wpximaxscale6
-#PBS -N chain_c6h66_covemuperf
+#PBS -N chain_fmaxmocks_test_plus_c1h19
 #PBS -l walltime=1000:00:00
 #PBS -l nodes=1:ppn=24
 #PBS -m ae
@@ -36,7 +36,8 @@ cd $PBS_O_WORKDIR
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate aem
-python run_chain.py /home/users/ksf293/aemulator/chains/configs/chains_wp_xi_xi2_upf_mcf_aemulus_fmaxmocks_test_c6h66_minscale0_covemuperf.cfg
+python run_chain.py /home/users/ksf293/aemulator/chains/configs/chains_wp_xi_xi2_upf_mcf_aemulus_fmaxmocks_test_plus_c1h19_minscale0.cfg
+#python run_chain.py /home/users/ksf293/aemulator/chains/configs/chains_wp_xi_xi2_upf_mcf_aemulus_fmaxmocks_test_c6h66_minscale0_covemuperf.cfg
 #python run_chain.py /home/users/ksf293/aemulator/chains/configs/chains_upf_aemulus_fmaxmocks_test_c2h20_maxscale0.cfg
 #python run_chain.py /home/users/ksf293/aemulator/chains/configs/chains_wp_xi_xi2_mcf_aemulus_fmaxmocks_test_c0h1_minscale1.cfg
 #python run_chain_mock.py /home/users/ksf293/aemulator/chains/configs/chains_wp_xi_xi2_upf_mcf_uchuu_fixgammaf_aemulus_fmaxmocks_uchuuchi2nclosest2000_smoothemu_wpxiupfmaxscale6.cfg

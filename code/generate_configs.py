@@ -9,12 +9,18 @@ def main():
     #stat_strs = np.loadtxt('../tables/statistic_sets.txt', dtype=str)
     #stat_strs = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str)
 
-    # covariance tests in appendix
-    stat_strs = ['wp_xi_xi2_upf_mcf']
-    generate_single_mock(stat_strs, (1,19), config_tag='_minscale0_covemuperf')
-    generate_single_mock(stat_strs, (6,66), config_tag='_minscale0_covemuperf')
+    # # covariance tests in appendix
+    # stat_strs = ['wp_xi_xi2_upf_mcf']
+    # generate_single_mock(stat_strs, (1,19), config_tag='_minscale0_covemuperf')
+    # generate_single_mock(stat_strs, (6,66), config_tag='_minscale0_covemuperf')
+
     #generate_recovery_set(stat_strs)
     #config_prior()
+
+    # plusminus number density tests
+    stat_strs = ['wp_xi_xi2_upf_mcf']
+    generate_single_mock(stat_strs, (1,19), config_tag='_minscale0', data_name='aemulus_fmaxmocks_test_minus')
+    generate_single_mock(stat_strs, (1,19), config_tag='_minscale0', data_name='aemulus_fmaxmocks_test_plus')
 
     #stat_strs = np.loadtxt('../tables/statistic_sets_scale_analysis.txt', dtype=str)
     #stat_strs = ['wp_xi_xi2_mcf']
@@ -42,11 +48,11 @@ def main():
 
 
 def generate_single_mock(stat_strs, id_pair, config_tag='_minscale0',
-                         param_tag=''):
+                         param_tag='', data_name='aemulus_fmaxmocks_test'):
     cosmo, hod = id_pair
     for stat_str in stat_strs:  
         config_aemulus(stat_str, cosmo, hod, config_tag=config_tag,
-                       param_tag=param_tag)
+                       param_tag=param_tag, data_name=data_name)
 
 
 def generate_recovery_set(stat_strs, config_tag='_minscale0',
@@ -205,10 +211,10 @@ def config_uchuu(stat_str):
         f.write(contents)
 
 
-def config_aemulus(stat_str, cosmo, hod, config_tag='', param_tag='', bins=None):
+def config_aemulus(stat_str, cosmo, hod, config_tag='', param_tag='', bins=None,
+                   data_name='aemulus_fmaxmocks_test'):
     statistics = stat_str.split('_')
 
-    data_name = 'aemulus_fmaxmocks_test'
     data_tag = '_'+data_name
 
     # mock names used for building emus
@@ -226,9 +232,9 @@ def config_aemulus(stat_str, cosmo, hod, config_tag='', param_tag='', bins=None)
     chain_results_fn = f'/mount/sirocco1/ksf293/aemulator/chains/results/results_{stat_str}{data_tag}_c{cosmo}h{hod}{param_tag}{config_tag}.pkl'
     n_threads = utils.get_nthreads(len(statistics))
     dlogz_str = '1e-2'
-    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_smoothgauss_emuperf_{mock_name_test}_{stat_str}_hod3_test0.dat'
-    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_emuperf_{mock_name_test}_{stat_str}_hod3_test0.dat'
-    print("COV EMUPERF, NOT SMOOTH")
+    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_smoothgauss_emuperf_{mock_name_test}_{stat_str}_hod3_test0.dat'
+    #cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_emuperf_{mock_name_test}_{stat_str}_hod3_test0.dat'
+    #print("COV EMUPERF, NOT SMOOTH")
 
     # param names, fmaxmocks: ['Omega_m', 'Omega_b', 'sigma_8', 'h', 'n_s', 'N_eff', 'w', 'M_sat', 'alpha', 'M_cut', 'sigma_logM', 'v_bc', 'v_bs', 'c_vir', 'f', 'f_env', 'delta_env', 'sigma_env', 'f_max']
     param_names_vary = get_param_names(param_tag, mock_name_train)
