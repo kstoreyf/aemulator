@@ -6,15 +6,19 @@ import utils
 
 def main():
     # TODO make sure to manually update train_tag_extra w any changes!
+    train_tag_extra = '_errstdev_fmaxmocks'
+    #train_tag_extra = '_errstdev_fmaxmocks_kernelamp'
     #train_tag_extra = '_errstdev_Msatmocks_uchuuchi2nclosest2000'
-    train_tag_extra = '_errstdev_fmaxmocks_uchuuchi2nclosest2000'
+    #train_tag_extra = '_errstdev_fmaxmocks_uchuuchi2nclosest2000_tiny'
     #statistics = ['wp', 'xi', 'xi2', 'upf', 'mcf']
     #statistics = ['wp', 'xi', 'xi2']
     #statistics = ['upf', 'mcf']
     #statistics = ['xi2', 'upf']
-    statistics = ['mcf']
-    scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
-    id_tag = '_aemulus_fmaxmocks_uchuuchi2nclosest2000'
+    statistics = ['xi2']
+    scalings = ['logxrsq']
+    #scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
+    #id_tag = '_aemulus_fmaxmocks_uchuuchi2nclosest2000'
+    id_tag = '' # if not nclosest, just empty
     for i in range(len(statistics)):    
         run(statistics[i], scalings[i], train_tag_extra=train_tag_extra,
             train_mode=True, test_mode=True, id_tag=id_tag)

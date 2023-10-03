@@ -26,9 +26,11 @@ def main():
     # UCHUU
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf', 'wp_xi_xi2_upf_mcf']
     #stat_strs = ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2_mcf']
-    stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']    
+    #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']    
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf', 'wp_xi_xi2_upf_mcf', 'upf']
-    #stat_strs = ['wp_xi', 'wp_upf', 'wp_mcf']
+    #stat_strs = ['wp_upf', 'wp_mcf']
+    #stat_strs = ['upf_mcf', 'wp_upf_mcf']
+    stat_strs = ['mcf']
     mock_tag = '_aemulus_fmaxmocks_test'
     #stat_strs = ['upf']
     cov_tag_extra = '_uchuuchi2nclosest2000'

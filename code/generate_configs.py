@@ -10,17 +10,19 @@ def main():
     #stat_strs = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str)
 
     # # covariance tests in appendix
-    # stat_strs = ['wp_xi_xi2_upf_mcf']
-    # generate_single_mock(stat_strs, (1,19), config_tag='_minscale0_covemuperf')
-    # generate_single_mock(stat_strs, (6,66), config_tag='_minscale0_covemuperf')
+    #stat_strs = ['wp_xi_xi2_upf_mcf']
+    #generate_single_mock(stat_strs, (6,69), config_tag='_minscale0_covemuperf')
+    #generate_single_mock(stat_strs, (6,66), config_tag='_minscale0_covemuperf')
 
     #generate_recovery_set(stat_strs)
     #config_prior()
 
     # plusminus number density tests
-    stat_strs = ['wp_xi_xi2_upf_mcf']
-    generate_single_mock(stat_strs, (1,19), config_tag='_minscale0', data_name='aemulus_fmaxmocks_test_minus')
-    generate_single_mock(stat_strs, (1,19), config_tag='_minscale0', data_name='aemulus_fmaxmocks_test_plus')
+    # stat_strs = ['wp_xi_xi2_upf_mcf']
+    # id_pair = (6,69)
+    # generate_single_mock(stat_strs, id_pair, config_tag='_minscale0_wpximaxscale6', data_name='aemulus_fmaxmocks_test_minus1')
+    # generate_single_mock(stat_strs, id_pair, config_tag='_minscale0_wpximaxscale6', data_name='aemulus_fmaxmocks_test_plus1')
+    #generate_single_mock(stat_strs, id_pair, config_tag='_minscale0_allmaxscale6', data_name='aemulus_fmaxmocks_test')
 
     #stat_strs = np.loadtxt('../tables/statistic_sets_scale_analysis.txt', dtype=str)
     #stat_strs = ['wp_xi_xi2_mcf']
@@ -36,15 +38,16 @@ def main():
     #                       param_tag='_fixgammaf')
  
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']
+    #stat_strs = ['wp_xi_xi2', 'upf_mcf', 'wp_upf_mcf']
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf', 'wp_xi_xi2_upf_mcf', 'upf']
     #stat_strs = ['wp_xi', 'wp_upf', 'wp_mcf']
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
-    #stat_strs = ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2_mcf']
-    #stat_strs = ['wp_xi_xi2_upf_mcf']
+    #stat_strs = ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2']
+    stat_strs = ['wp_xi_xi2_upf_mcf']
     #stat_strs = ['wp_xi_xi2']
-
-    # for stat_str in stat_strs:
-    #   config_uchuu(stat_str)
+    #stat_strs = ['wp_mcf']
+    for stat_str in stat_strs:
+      config_uchuu(stat_str)
 
 
 def generate_single_mock(stat_strs, id_pair, config_tag='_minscale0',
@@ -115,22 +118,21 @@ def config_uchuu(stat_str):
     infl_tag = ''
     #infl_tag = '_inflateupferr2nox'
     #comb_tag = '_smooth'+infl_tag
-    comb_tag = '_smoothemuboth'+infl_tag
-    #comb_tag = '_smoothboth'+infl_tag
+    #comb_tag = '_smoothemuboth'+infl_tag
+    comb_tag = '_smoothboth'+infl_tag
     #comb_tag = '_smooth'+infl_tag
     #comb_tag = '_smooth_covnegfix'+infl_tag
     cov_tag_extra = '_uchuuchi2nclosest2000'
     #cov_tag_extra = ''
-    config_tag = f'{mock_tag}{cov_tag_extra}_smoothemuboth{infl_tag}_wpxiupfmaxscale6'
+    #config_tag = f'{mock_tag}{cov_tag_extra}_smoothemuboth{infl_tag}_wpxiupfmaxscale6'
     #config_tag = f'{mock_tag}{cov_tag_extra}_smoothemu{infl_tag}_wpximaxscale6'
-    #config_tag = f'{mock_tag}{cov_tag_extra}_smoothboth{infl_tag}_allmaxscale6'
+    config_tag = f'{mock_tag}{cov_tag_extra}{comb_tag}_wpximaxscale6'
     #config_tag = f'{mock_tag}{cov_tag_extra}_covnegfix{infl_tag}_wpximaxscale6'
     #config_tag = f'_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle{cov_tag_extra}{infl_tag}'
     #config_tag = '_Msatmocks_wpmaxscale6'
 
-    #param_tag = ''
-    param_tag = '_fixgammaf'
-    #param_tag = '_all'
+    param_tag = ''
+    #param_tag = '_fixgammaf'
     #param_tag = '_hodparams'
     save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{data_tag}{param_tag}{config_tag}.h5'
 
@@ -161,6 +163,13 @@ def config_uchuu(stat_str):
         for i in range(len(statistics)):
             if 'wp' in statistics[i]: #writing this way to include "wp80"
                 bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    if 'wponehalo' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if 'wp' in statistics[i]: #writing this way to include "wp80"
+                bins.append(list(range(0, 4)))
             else:
                 bins.append(list(range(0, 9)))
     elif 'wpximaxscale6' in config_tag:
@@ -195,6 +204,23 @@ def config_uchuu(stat_str):
                 bins.append(list(range(0, 9)))
     elif 'allmaxscale6' in config_tag:
         bins = [list(range(0, 7))]*len(statistics)
+    elif 'onehalo' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if statistics[i]=='upf':
+                if 'upfandonehalo' in config_tag:
+                    bins.append(list(range(0, 9)))
+                else:
+                    bins.append([])
+            else:
+                bins.append(list(range(0, 4)))
+    elif 'twohalo' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if statistics[i]=='upf':
+                bins.append(list(range(0, 9)))
+            else:
+                bins.append(list(range(4, 9)))
     else:
         bins = [list(range(0, 9))]*len(statistics)
     

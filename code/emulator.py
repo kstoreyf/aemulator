@@ -194,6 +194,12 @@ class Emulator(object):
     def div_rsq(self, x_rsq):
         return x_rsq / self.r_vals**2
 
+    def log_times_rsq(self, x):
+        return np.log10(x * self.r_vals**2 + 300) 
+
+    def log_div_rsq(self, x_rsq):
+        return (10**x_rsq - 300) / self.r_vals**2
+
     def times_rsq_const(self, x):
         x_xrsq =  x * self.r_vals**2
         return (x_xrsq + 300)/300
@@ -239,6 +245,7 @@ class Emulator(object):
         self.scaler_x = StandardScaler(with_mean=False, with_std=False) # NO XSCALE 
         self.scaler_x.fit(self.x_train)
 
+        print(scaling)
         if scaling=='log':
             self.scaler_y = FunctionTransformer(func=np.log10, inverse_func=self.pow10) 
             self.scaler_y.fit(self.y_train)  
@@ -249,6 +256,10 @@ class Emulator(object):
 
         elif scaling=='xrsq':
             self.scaler_y = FunctionTransformer(func=self.times_rsq, inverse_func=self.div_rsq) 
+            self.scaler_y.fit(self.y_train)  
+
+        elif scaling=='logxrsq':
+            self.scaler_y = FunctionTransformer(func=self.log_times_rsq, inverse_func=self.log_div_rsq) 
             self.scaler_y.fit(self.y_train)  
 
         elif scaling=='xrsqconst':
@@ -274,7 +285,7 @@ class Emulator(object):
             self.scaler_y.fit(self.y_train)
 
         else:
-            raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean', 'xrsq', 'xrsqconst', 'xrsqmean', 'xrsqminmax']")
+            raise ValueError(f"Scaling method {scaling} not recognized! Choose from: ['log', 'mean', 'xrsq', 'xrsqconst', 'xrsqmean', 'xrsqminmax', 'logxrsq']")
 
 
     def scale_y_error(self, scaling):
@@ -282,6 +293,7 @@ class Emulator(object):
         if scaling=='log':
             #for log of y, errors are 1/ln(10) * dy/y. dy is error, for y we use the mean.
             #source: https://faculty.washington.edu/stuve/log_error.pdf, https://web.ma.utexas.edu/users/m408n/m408c/CurrentWeb/LM3-6-2.php
+            # TODO uh why am i using the mean and not just self.y_train??
             self.y_error_scaled = 1/np.log(10) * self.y_error / np.mean(self.y_train, axis=0) #logscaler
 
         elif scaling=='mean':
@@ -294,6 +306,10 @@ class Emulator(object):
 
         elif scaling=='xrsq':
             self.y_error_scaled = self.y_error * self.r_vals**2
+
+        elif scaling=='logxrsq':
+            # using mean as y for now bc that's what did above in log, but revisit this... (TODO)! 
+            self.y_error_scaled = 1/np.log(10) * self.y_error * self.r_vals**2 / (np.mean(self.y_train, axis=0) * self.r_vals**2 + 300)
 
         elif scaling=='xrsqconst':
             self.y_error_scaled = self.y_error * self.r_vals**2
@@ -629,6 +645,11 @@ class EmulatorGeorge(Emulator):
         #kernel = k_expsq*k_const + k_m32 + k_const2 # this is "M32ExpConst2"
         #print("USING M32ExpConst2 KERNEL, MIGHT WANNA CHANGE BACK to M32ExpConst ??")
 
+        #TODO figure out whether also should have this overall variance amplitude scaling and fit it
+        # when already have k_const in the kernel
+        #amp = np.var(y_train_scaled_bin)
+        #kernel *= amp
+
         model = george.GP(kernel, mean=np.mean(y_train_scaled_bin), solver=george.BasicSolver)
         model.compute(self.x_train_scaled, y_error_scaled_bin)
         print(y_train_scaled_bin)
@@ -637,6 +658,12 @@ class EmulatorGeorge(Emulator):
             model.set_parameter_vector(p)
             logl = model.log_likelihood(y_train_scaled_bin, quiet=True)
             return -logl if np.isfinite(logl) else 1e25
+
+        print("parameter vector - initial")
+        print(len(model.get_parameter_names(include_frozen=True)), len(model.get_parameter_vector(include_frozen=True)))
+        #print(model.get_parameter_names())
+        print(model.get_parameter_names(include_frozen=True))
+        print(model.get_parameter_vector(include_frozen=True))
 
         print("Optimizing")
         # note: the parameter vector is one value for each kernel parameter in the combined kernel! 37d for us

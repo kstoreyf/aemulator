@@ -21,9 +21,9 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
     mock_name_glam = 'glam'
     cov_dir = '../covariances'
     #comb_tag = '_smooth_covnegfix'
-    comb_tag = '_smoothemuboth'
+    #comb_tag = '_smoothemuboth'
     #comb_tag = '_smoothemuperf'
-    #comb_tag = '_smoothboth'
+    comb_tag = '_smoothboth'
     #comb_tag = '_smooth'
     if inflate_upf_err and 'upf' in stat_str:
         inflate_factor = 2

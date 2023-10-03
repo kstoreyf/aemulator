@@ -698,6 +698,7 @@ def chi2(y_true, y_pred, variances):
     assert len(y_true)==len(y_pred), 'y_true and y_pred must be same length!'
     assert len(y_true)==len(variances), 'y_true and variances must be same length!'
     chisq = np.sum((y_pred-y_true)**2/variances)
+    print("Chi2:", chisq)
     return chisq
 
 
@@ -712,8 +713,15 @@ def get_deg_of_freedom(chaintag):
     # The degree of freedom, nu = n-m,
     # equals the number of observations n minus the number of fitted parameters m.
     m_params = len(f.attrs['param_names_vary']) - len(f.attrs['fixed_param_names'])
-    bin_arr = np.vstack(f['bins'])
-    n_obs = len(bin_arr.flatten())
+    # this way only works for all same bin num
+    bin_arr = f['bins']
+    print(bin_arr)
+    n_obs = np.sum([len(bins) for bins in bin_arr])
+    print('n_obs:', n_obs)
+    print('m_params:', m_params)
+    #bin_arr = np.vstack(f['bins'])
+    #n_obs = len(bin_arr.flatten())
+    f.close()
     return n_obs - m_params
 
 

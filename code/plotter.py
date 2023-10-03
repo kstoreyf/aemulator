@@ -4,6 +4,7 @@ import pickle
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from matplotlib import gridspec
+from matplotlib.lines import Line2D
 from scipy.stats import norm
 
 import getdist
@@ -818,6 +819,50 @@ def plot_statistic(statistic, x_vals, y_vals):
     
     plt.xscale(scale_dict[statistic][0])
     plt.yscale(scale_dict[statistic][1])
+
+
+def plot_statistics(statistic, r_arr, y_arr, ylabel_note='', fn_save=None, alpha=0.1,
+                   rescale=False):
+    plt.figure(figsize=(8,6))
+    ax = plt.gca()
+    r = r_arr[0] #assume all r's are the same
+    
+    multiplier = 1.0
+    ylabel = stat_labels[statistic]
+    if statistic=='xi2':
+        multiplier = r**2
+        #ax.set_ylim(-3,3)
+        ylabel = r'$s^2$' + ylabel
+            
+    y_vals = multiplier * y_arr
+    if rescale:
+        y_vals = (y_vals - np.mean(y_vals, axis=0))/np.std(y_vals, axis=0)
+            
+    for i in range(len(y_vals)):
+        plt.plot(r, y_vals[i], color='grey', alpha=alpha, lw=0.2)
+    
+    #print(np.min(y_vals.flatten()))
+    y_mean = np.mean(y_vals, axis=0)
+    #y_std = np.std(y_vals, axis=0)
+    #plt.fill_between(r, y_mean-y_std, y_mean+y_std, alpha=0.5, color='orange')
+
+    plt.plot(r, y_mean, color='k', lw=2, label='mean measurement')
+    p16 = np.percentile(y_vals, 16, axis=0)
+    p84 = np.percentile(y_vals, 84, axis=0)
+    plt.fill_between(r, p16, p84, alpha=0.5, color='orange')
+    
+    plt.xscale(scale_dict[statistic][0])
+    plt.yscale(scale_dict[statistic][1])
+    
+    plt.xlabel(r_labels[statistic])
+    plt.ylabel(ylabel + ylabel_note)
+    
+    handles, labels = ax.get_legend_handles_labels()
+    line = Line2D([0], [0], color='grey', label='measurement on unique\ncosmo+HOD model', lw=0.5)
+    handles.insert(0,line) 
+    plt.legend(handles=handles, loc='best', fontsize=12)
+    if fn_save is not None:
+        plt.savefig(f'{fn_save}.png', bbox_inches='tight')
 
 
 def plot_statistics_compare(statistic, r, y_true, y_arr, colors, labels):
