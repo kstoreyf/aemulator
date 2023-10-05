@@ -43,11 +43,12 @@ def main():
     #stat_strs = ['wp_xi', 'wp_upf', 'wp_mcf']
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
     #stat_strs = ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2']
-    stat_strs = ['wp_xi_xi2_upf_mcf']
+    stat_strs = ['wp', 'wp_xi_xi2', 'wp_upf_mcf', 'wp_xi_xi2_upf_mcf']
     #stat_strs = ['wp_xi_xi2']
     #stat_strs = ['wp_mcf']
     for stat_str in stat_strs:
-      config_uchuu(stat_str)
+      #config_uchuu(stat_str)
+      config_unit(stat_str)
 
 
 def generate_single_mock(stat_strs, id_pair, config_tag='_minscale0',
@@ -102,6 +103,56 @@ def generate_scale_analysis_set(stat_strs, mode='maxscales',
                 
                 config_tag += config_tag_extra
                 config_aemulus(stat_str, cosmo, hod, config_tag=config_tag, bins=bins)
+
+
+def config_unit(stat_str):
+
+    statistics = stat_str.split('_')
+
+    data_name = 'unit'
+    data_tag = '_'+data_name
+
+    mock_tag = '_aemulus_fmaxmocks'
+    mock_name_train = 'aemulus_fmaxmocks_train'
+    mock_name_test = 'aemulus_fmaxmocks_test'
+
+    infl_tag = ''
+    comb_tag = '_smoothboth'+infl_tag
+    cov_tag_extra = ''
+
+    config_tag = f'{mock_tag}{cov_tag_extra}{comb_tag}'
+    #config_tag = f'{mock_tag}{cov_tag_extra}{comb_tag}_wpximaxscale6'
+
+    param_tag = ''
+    save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{data_tag}{param_tag}{config_tag}.h5'
+
+    emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
+    scalings = [utils.get_fiducial_emu_scaling(statistic) for statistic in statistics]
+
+    train_tags_extra = [f'_errstdev_fmaxmocks{cov_tag_extra}']*len(statistics)
+
+    chain_results_fn = f'/mount/sirocco1/ksf293/aemulator/chains/results/results_{stat_str}{data_tag}{param_tag}{config_tag}.pkl'
+    n_threads = utils.get_nthreads(len(statistics))
+    dlogz_str = '1e-2'
+    cov_fn = f'/home/users/ksf293/aemulator/covariances/cov_combined_{mock_name_test}{cov_tag_extra}_unitglam{comb_tag}_{stat_str}.dat'
+
+    param_names_vary = get_param_names(param_tag, mock_name_train)
+    seed = np.random.randint(1000)
+
+    bins = get_bins(statistics, config_tag)
+    
+    contents = populate_config_blank(save_fn, statistics, emu_names, scalings, train_tags_extra,
+                        mock_name_train, mock_name_test,
+                        chain_results_fn, n_threads, dlogz_str, 
+                        cov_fn, param_names_vary, seed,
+                        data_name, bins)
+
+    config_fn = f'/home/users/ksf293/aemulator/chains/configs/chains_{stat_str}{data_tag}{param_tag}{config_tag}.cfg'
+    
+    print(config_fn)
+    with open(config_fn, 'w') as f:
+        f.write(contents)
+
 
 
 def config_uchuu(stat_str):
@@ -498,6 +549,76 @@ def match_bins(bins1, bins2, minscale_idx, maxscale_idx):
     maxscale_val = bins1[maxscale_idx+1] # because want top bin edge
     bins2_idxs = np.where((minscale_val < bins2) & (bins2 < maxscale_val))[0]
     return list(bins2_idxs)
+
+
+def get_bins(statistics, config_tag):
+    if 'wpmaxscale6' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if 'wp' in statistics[i]: #writing this way to include "wp80"
+                bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    if 'wponehalo' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if 'wp' in statistics[i]: #writing this way to include "wp80"
+                bins.append(list(range(0, 4)))
+            else:
+                bins.append(list(range(0, 9)))
+    elif 'wpximaxscale6' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            #writing this way for wp to include "wp80", but not for xi bc of xi2
+            if 'wp' in statistics[i] or statistics[i]=='xi': 
+                bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    elif 'wpxiupfmaxscale6' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            #writing this way for wp to include "wp80", but not for xi bc of xi2
+            if 'wp' in statistics[i] or statistics[i]=='xi' or statistics[i]=='upf': 
+                bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    elif 'upfmaxscale6' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if statistics[i]=='upf':
+                bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    elif 'upfmaxscale0' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if statistics[i]=='upf':
+                bins.append([0])
+            else:
+                bins.append(list(range(0, 9)))
+    elif 'allmaxscale6' in config_tag:
+        bins = [list(range(0, 7))]*len(statistics)
+    elif 'onehalo' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if statistics[i]=='upf':
+                if 'upfandonehalo' in config_tag:
+                    bins.append(list(range(0, 9)))
+                else:
+                    bins.append([])
+            else:
+                bins.append(list(range(0, 4)))
+    elif 'twohalo' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if statistics[i]=='upf':
+                bins.append(list(range(0, 9)))
+            else:
+                bins.append(list(range(4, 9)))
+    else:
+        bins = [list(range(0, 9))]*len(statistics)
+
+    return bins
 
 
 def populate_config(config_tag, statistics, emu_names, scalings, n_threads, cosmo, hod, bins):

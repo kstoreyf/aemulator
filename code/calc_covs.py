@@ -30,19 +30,29 @@ def main():
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf', 'wp_xi_xi2_upf_mcf', 'upf']
     #stat_strs = ['wp_upf', 'wp_mcf']
     #stat_strs = ['upf_mcf', 'wp_upf_mcf']
-    stat_strs = ['mcf']
-    mock_tag = '_aemulus_fmaxmocks_test'
-    #stat_strs = ['upf']
-    cov_tag_extra = '_uchuuchi2nclosest2000'
-    #cov_tag_extra = ''
-    mode = 'glam_for_uchuu'
-    inflate_upf_err = False
-    if 'uchuuchi2nclosest2000' in cov_tag_extra:
-        id_tag = '_aemulus_fmaxmocks_uchuuchi2nclosest2000'
-    else:
-        id_tag = ''
 
+    # UNIT
+    stat_strs = ['wp', 'xi', 'xi2', 'upf', 'mcf', 'wp_xi_xi2', 'wp_upf_mcf', 'wp_xi_xi2_upf_mcf']
+    mock_tag = '_aemulus_fmaxmocks_test'
+    cov_tag_extra = ''
+    mode = 'glam_for_unit'
+    inflate_upf_err = False
+    id_tag = ''
     train_tag_extra = f'_errstdev_fmaxmocks{cov_tag_extra}'
+
+    # UCHUU
+    # stat_strs = ['mcf']
+    # mock_tag = '_aemulus_fmaxmocks_test'
+    # #stat_strs = ['upf']
+    # cov_tag_extra = '_uchuuchi2nclosest2000'
+    # #cov_tag_extra = ''
+    # mode = 'glam_for_uchuu'
+    # inflate_upf_err = False
+    # if 'uchuuchi2nclosest2000' in cov_tag_extra:
+    #     id_tag = '_aemulus_fmaxmocks_uchuuchi2nclosest2000'
+    # else:
+    #     id_tag = ''
+    # train_tag_extra = f'_errstdev_fmaxmocks{cov_tag_extra}'
 
     for stat_str in stat_strs:
         print(f'Calculating covariance matrices for {stat_str}')

@@ -87,6 +87,14 @@ def load_cosmo_params(mock_name):
         # not sure about N_eff! pulled from Planck2015 table 5, rightmost col (https://arxiv.org/pdf/1502.01589.pdf)
         # w??
         cosmo_params = [0.3089, 0.0486, 0.8159, 0.6774, 0.9667, 3.04, -1]
+    elif mock_name=='unit':
+        # http://www.unitsims.org/ 
+        # Table 4 of Planck Collaboration (2016) 
+        # uh this seems like a mix of results... on sims page, quoted same as uchuu (planck 2015/2016)
+        # except for sigma8. that sigma8 number from planck 2018 i think (https://wiki.cosmos.esa.int/planck-legacy-archive/images/9/9c/Baseline_params_table_2018_95pc.pdf)
+        # but others change!
+        # doing 2016 with modified sigma8 for now...
+        cosmo_params = [0.3089, 0.0486, 0.8147, 0.6774, 0.9667, 3.04, -1]
     elif 'test' in mock_name:
         cosmo_fn = '../tables/cosmology_camb_test_box_full.dat'
         cosmo_params = np.loadtxt(cosmo_fn)
@@ -105,7 +113,7 @@ def load_hod_params(mock_name, data_name=None):
     if 'fmaxmocks' in mock_name:
         hod_param_names.append("f_max")
 
-    if data_name=='uchuu':
+    if data_name=='uchuu' or data_name=='unit':
         # made using SHAM! but we do know gamma_f=1
         hod_params = [float("NaN")]*len(hod_param_names)
         #idx_f = hod_params.index("f")

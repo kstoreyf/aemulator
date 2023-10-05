@@ -6,14 +6,14 @@ import calc_smoothgauss_cov as csc
 
 def main():
     # The tag that we made the covariance matrices with! 
-    mock_tag_cov = '_aemulus_Msatmocks_test'
-    statistics = ['wp', 'xi', 'upf']
-    #statistics = ['mcf']
-    stat_str = '_'.join(statistics)
-    mode = 'glam_for_uchuu'
+    mock_tag_cov = '_aemulus_fmaxmocks_test'
+    stat_strs = ['wp', 'xi', 'xi2', 'upf', 'mcf', 'wp_xi_xi2', 'wp_upf_mcf', 'wp_xi_xi2_upf_mcf']
+    mode = 'glam_for_unit'
+    #mode = 'glam_for_uchuu'
     #mode = 'glam_for_aemulus'
     #mode = 'aemulus_for_uchuu'
-    run(mock_tag_cov, stat_str, mode)
+    for stat_str in stat_strs:
+        run(mock_tag_cov, stat_str, mode)
 
 
 def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
@@ -36,6 +36,8 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
         cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_{mock_name_glam}{comb_tag}_{stat_str}.dat"
     elif mode=='aemulus_for_uchuu':
         cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_uchuu{comb_tag}_{stat_str}.dat"
+    elif mode=='glam_for_unit':
+        cov_combined_fn = f"{cov_dir}/cov_combined{mock_tag_cov}{cov_tag_extra}_unit{mock_name_glam}{comb_tag}_{stat_str}.dat"
 
     if 'glam' in mode:
         cov_glam_fn = f'{cov_dir}/cov_{mock_name_glam}_{stat_str}.dat'
@@ -60,6 +62,7 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
     L_uchuu = 2000.
     L_glam = 1000.
     L_aemulus = 1050.
+    L_unit = 1000. #careful, real volume is x4!
     if mode=='glam_for_uchuu':
         # scale glam to uchuu, for recovery on uchuu
         cov_data = cov_glam*(L_glam/L_uchuu)**3
@@ -83,6 +86,14 @@ def run(mock_tag_cov, stat_str, mode, cov_tag_extra='', inflate_upf_err=False):
 
         # L_aemulus/L_uchuu because uchuu is larger volume so should have smaller cov
         cov_data = cov_aemulus_5box*(L_aemulus/L_uchuu)**3
+
+    if mode=='glam_for_unit':
+        # scale glam to uchuu, for recovery on uchuu
+        V_glam = L_glam**3
+        V_unit = 4 * L_unit**3 #because mean of 4 paired-and-fixed
+        cov_data = cov_glam*(V_glam/V_unit)
+        #cov_emu = cov_smooth_emuperf - cov_aemulus_5box
+        cov_emu = cov_emuperf - cov_aemulus_5box
 
     else:
         print("Mode not recognized!")
