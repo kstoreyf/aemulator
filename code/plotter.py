@@ -290,7 +290,7 @@ def plot_accuracy_figure(statistics, train_tags, mock_tag_test='_aemulus_test',
 def plot_contours(chaintags, mock_name_hod='aemulus_fmaxmocks_train', legend_labels=[],
                   params_toplot=None, colors=None,
                   legend_loc='upper center', legend_fontsize=20,
-                  vertical_markers=None, vertical_marker_color='grey', alpha=0.4,
+                  vertical_markers=None, vertical_marker_color='grey', alpha=0.8,
                   chaintag_prior=None, plot_hard_prior=False):
     # Make dict of bounds for plot ranges
     bounds = utils.get_bounds(mock_name_hod)
@@ -299,6 +299,8 @@ def plot_contours(chaintags, mock_name_hod='aemulus_fmaxmocks_train', legend_lab
     def _load_samps(chaintag, params_toplot, smooth_scale_1D=-1, smooth_scale_2D=-1):
         chain_fn = f'../chains/param_files/chain_params_{chaintag}.h5'
         fw = h5py.File(chain_fn, 'r')
+        #print(chain_fn)
+        #print(dict(fw.attrs))
         param_names = fw.attrs['param_names_vary']
         if vertical_markers is None and len(fw.attrs['true_values'])>0:
             vertical_markers_toplot = fw.attrs['true_values']
@@ -319,12 +321,29 @@ def plot_contours(chaintags, mock_name_hod='aemulus_fmaxmocks_train', legend_lab
         if params_toplot is None:
             params_toplot = param_names
         else:
+            assert np.all(np.isin(params_toplot, param_names)), "Some parameters to plot not varied in chain!"
             idxs = []
             for pm in params_toplot:
                 idxs.append(np.where(param_names == pm))
             idxs = np.array(idxs).flatten()
             samples = samples[:,idxs]
-            # Note: weight & evidence same for all params, shape (n_samps,), so don't need to slice
+
+            # samples_toplot = []
+            # vertical_markers_toplot_arr = []
+            # for pm in params_toplot:
+            #     if pm in param_names:
+            #         idx = np.where(param_names == pm)[0][0]
+            #         print(idx)
+            #         #idxs = np.array(idxs).flatten()
+            #         samples_toplot.append(samples[:,idx])
+            #         if vertical_markers_toplot is not None:
+            #             vertical_markers_toplot_arr.append(vertical_markers_toplot[idx])
+            #     else:
+            #         samples_toplot.append(None)
+
+            # vertical_markers_toplot = vertical_markers_toplot_arr
+                
+            #Note: weight & evidence same for all params, shape (n_samps,), so don't need to slice
             if vertical_markers_toplot is not None:
                 vertical_markers_toplot = vertical_markers_toplot[idxs]
 
@@ -446,8 +465,9 @@ def plot_correlation_matrix(corr, statistics, show_tick_labels=False):
     cb.set_label(label=r'Correlation $C_{ij}/\sqrt{C_{ii}C_{jj}}$', fontsize=20)
 
 
-def plot_uncertainty_figure(results_dict, prior_dict, params_toplot, stat_strs_toplot, id_pairs, labels, colors, rotation=0,
-                            nrows=2, ncols=2):
+def plot_uncertainty_figure(results_dict, prior_dict, params_toplot, 
+                            stat_strs_toplot, id_pairs, labels, colors, 
+                            alpha=1, rotation=0, nrows=2, ncols=2):
     subfig_width, subfig_height = (6,5)
     fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
     plt.subplots_adjust(hspace=0.15, wspace=0.15)
@@ -459,14 +479,15 @@ def plot_uncertainty_figure(results_dict, prior_dict, params_toplot, stat_strs_t
             if i==(nrows-1):
                 label_xticks = True
             plot_uncertainty_bar_chart(axarr[i,j], results_dict, prior_dict, params_toplot[count], stat_strs_toplot, id_pairs, 
-                                              labels, colors, rotation=rotation, label_xticks=label_xticks)
+                                              labels, colors, alpha=alpha, rotation=rotation, label_xticks=label_xticks)
             count += 1
             
             axarr[i,0].set_ylabel(fr"1/$\sigma$") # set ylabel on 1st column only (order [row, col])
 
 
-def plot_uncertainty_bar_chart(ax, results_dict, prior_dict, param_toplot, stat_strs_toplot, id_pairs, labels, colors, 
-                               rotation=0, label_xticks=False):
+def plot_uncertainty_bar_chart(ax, results_dict, prior_dict, param_toplot,
+                               stat_strs_toplot, id_pairs, labels, colors, 
+                               alpha=1, rotation=0, label_xticks=False):
     xvals = range(len(stat_strs_toplot))
 
     uncertainties = np.empty(len(stat_strs_toplot))
@@ -488,7 +509,7 @@ def plot_uncertainty_bar_chart(ax, results_dict, prior_dict, param_toplot, stat_
     ax.axhline(1/uncertainty_prior, ls='--', color='grey')
     ax.text(0.3, 1.05*1/uncertainty_prior, 'prior', color='grey', fontsize=14)
 
-    ax.bar(xvals, 1/uncertainties, yerr=[1/uncertainties-yerrs_lo, yerrs_hi-1/uncertainties], color=colors, width=0.2)#, tick_label=stat_strs)
+    ax.bar(xvals, 1/uncertainties, yerr=[1/uncertainties-yerrs_lo, yerrs_hi-1/uncertainties], color=colors, alpha=alpha, width=0.2)#, tick_label=stat_strs)
     ax.set_xticks(xvals)
     if label_xticks:
         ax.set_xticklabels(labels, rotation=rotation, fontsize=18)
@@ -500,7 +521,7 @@ def plot_uncertainty_bar_chart(ax, results_dict, prior_dict, param_toplot, stat_
 
 def plot_cumulative_dist_figure(results_dict, params_toplot, stat_strs_toplot, id_pairs, labels, colors, 
                                 nrows=2, ncols=2, divide_by_error=False, value_to_compare='median',
-                                legend_loc='lower right'):
+                                legend_loc='lower right', alpha=1):
     subfig_width, subfig_height = (6,5)
     fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
     plt.subplots_adjust(hspace=0.22, wspace=0.15)
@@ -509,7 +530,7 @@ def plot_cumulative_dist_figure(results_dict, params_toplot, stat_strs_toplot, i
     for i in range(nrows):
         for j in range(ncols):
             plot_cumulative_dist(results_dict, axarr[i,j], params_toplot[count], stat_strs_toplot, id_pairs, 
-                                 labels, colors, divide_by_error=divide_by_error, value_to_compare=value_to_compare)
+                                 labels, colors, divide_by_error=divide_by_error, value_to_compare=value_to_compare, alpha=alpha)
             count += 1
             
             if divide_by_error:
@@ -524,7 +545,7 @@ def plot_cumulative_dist_figure(results_dict, params_toplot, stat_strs_toplot, i
 
 
 def plot_cumulative_dist(results_dict, ax, param_toplot, stat_strs_toplot, id_pairs, labels, colors,
-                         divide_by_error=False, value_to_compare='median'):
+                         divide_by_error=False, value_to_compare='median', alpha=1):
 
     for s, stat_str in enumerate(stat_strs_toplot):
         deltas = []
@@ -539,7 +560,7 @@ def plot_cumulative_dist(results_dict, ax, param_toplot, stat_strs_toplot, id_pa
         N = len(deltas)
         deltas_sorted = np.sort(deltas)
         cdf_exact = np.array(range(N))/float(N)
-        ax.plot(deltas_sorted, cdf_exact, color=colors[s], label=labels[s], lw=2)
+        ax.plot(deltas_sorted, cdf_exact, color=colors[s], label=labels[s], lw=2, alpha=alpha)
 
     ax.axvline(0.0, color='k')
     ax.axhline(0.5, color='k')
@@ -695,7 +716,8 @@ def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplo
                                  id_pair, labels, colors, 
                                  rotation=0, nrows=2, ncols=2, lss=None, lws=None,
                                  comparison_dicts=None, xlabel=None, ylabel=r"1/$\sigma$", 
-                                 show_top_axis=True, legend_top=False):
+                                 show_top_axis=True, legend_top=False,
+                                 alpha=1):
     assert nrows * ncols == len(params_toplot), 'Passed incorrect number of rows and columns!'
     subfig_width, subfig_height = (6,5)
     fig, axarr = plt.subplots(nrows=nrows, ncols=ncols, figsize=(subfig_width*ncols, subfig_height*nrows))
@@ -716,7 +738,7 @@ def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplo
                                   stat_strs_toplot, id_pair, labels, colors, 
                                   rotation=rotation, label_xticks=label_xticks,
                                   lss=lss, lws=lws, comparison_dicts=comparison_dicts, xlabel=xlabel,
-                                  show_top_axis=show_top_axis)
+                                  show_top_axis=show_top_axis, alpha=alpha)
             
             axarr[i,0].set_ylabel(ylabel) # set ylabel on 1st column only (order [row, col])
             
@@ -738,7 +760,8 @@ def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplo
 
 def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, stat_strs_toplot, id_pairs, labels, colors, 
                           rotation=0, label_xticks=False, lss=None, lws=None, 
-                          comparison_dicts=None, xlabel=None, show_top_axis=True):
+                          comparison_dicts=None, xlabel=None, show_top_axis=True,
+                          alpha=1):
     
     if lss is None:
         lss = ['-']*len(stat_strs_toplot)
@@ -757,7 +780,10 @@ def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, s
         r_plot = rlog
         if stat_str=='upf':
             r_plot = rlin
-        ax.plot(r_plot, 1/uncertainties_scales, marker='None', color=colors[s], label=labels[s], ls=lss[s], lw=lws[s])
+        alpha_s = alpha
+        if type(alpha)==list or type(alpha)==np.array:
+            alpha_s = alpha[s]
+        ax.plot(r_plot, 1/uncertainties_scales, marker='None', color=colors[s], label=labels[s], ls=lss[s], lw=lws[s], alpha=alpha_s)
         ax.set_xscale('log')
         
         if comparison_dicts is not None:

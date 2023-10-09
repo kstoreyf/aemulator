@@ -91,10 +91,11 @@ def load_cosmo_params(mock_name):
         # http://www.unitsims.org/ 
         # Table 4 of Planck Collaboration (2016) 
         # uh this seems like a mix of results... on sims page, quoted same as uchuu (planck 2015/2016)
-        # except for sigma8. that sigma8 number from planck 2018 i think (https://wiki.cosmos.esa.int/planck-legacy-archive/images/9/9c/Baseline_params_table_2018_95pc.pdf)
-        # but others change!
-        # doing 2016 with modified sigma8 for now...
-        cosmo_params = [0.3089, 0.0486, 0.8147, 0.6774, 0.9667, 3.04, -1]
+        # except for sigma8, says 0.8147. (on site and paper: https://ui.adsabs.harvard.edu/abs/2019MNRAS.487...48C/abstract) 
+        # that sigma8 number from planck 2018 i think (https://wiki.cosmos.esa.int/planck-legacy-archive/images/9/9c/Baseline_params_table_2018_95pc.pdf)
+        # but others change
+        # doing 2016 for now, assume sigma8 is a typo in the paper?
+        cosmo_params = [0.3089, 0.0486, 0.8159, 0.6774, 0.9667, 3.04, -1]
     elif 'test' in mock_name:
         cosmo_fn = '../tables/cosmology_camb_test_box_full.dat'
         cosmo_params = np.loadtxt(cosmo_fn)
@@ -487,6 +488,31 @@ def print_uncertainty_results_abstract(results_dict, params, id_pairs, prior_dic
                 #print(results_dict[stat_str])
                 uncertainties_id_pairs.append(results_dict[stat_str][tuple(id_pair)][pn]['uncertainty'])
             uncertainty = np.mean(uncertainties_id_pairs)
+            uncertainties_stat_strs.append(uncertainty)
+            print(f"{stat_str}: {uncertainty:.4f}")
+
+        idx_standard = stat_strs.index(stat_str_standard)
+        idx_incl_density = stat_strs.index(stat_str_incl_density)
+        uncertainty_change = (uncertainties_stat_strs[idx_incl_density]-uncertainties_stat_strs[idx_standard])/uncertainties_stat_strs[idx_standard]
+        increased_precision = -uncertainty_change
+        print(f"Increased precision from standard to beyond by: {100*increased_precision:.1f}%")
+        print()
+
+
+def print_uncertainty_results_mock(results_dict, params, prior_dict):
+    for _, pn in enumerate(params):    
+
+        print(pn)
+        uncertainty_prior = prior_dict[pn]['uncertainty']
+        print(f"Prior: {uncertainty_prior:.4f}")
+        
+        stat_str_standard = 'wp_xi_xi2'
+        stat_str_incl_density = 'wp_xi_xi2_upf_mcf'
+        stat_strs = [stat_str_standard, stat_str_incl_density]
+        
+        uncertainties_stat_strs = []
+        for stat_str in stat_strs:
+            uncertainty = results_dict[stat_str][pn]['uncertainty']
             uncertainties_stat_strs.append(uncertainty)
             print(f"{stat_str}: {uncertainty:.4f}")
 

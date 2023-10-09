@@ -43,11 +43,12 @@ def main():
     #stat_strs = ['wp_xi', 'wp_upf', 'wp_mcf']
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
     #stat_strs = ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2']
-    stat_strs = ['wp', 'wp_xi_xi2', 'wp_upf_mcf', 'wp_xi_xi2_upf_mcf']
+    #stat_strs = ['wp', 'wp_xi_xi2', 'wp_upf_mcf', 'wp_xi_xi2_upf_mcf']
+    stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']
     #stat_strs = ['wp_xi_xi2']
     #stat_strs = ['wp_mcf']
     for stat_str in stat_strs:
-      #config_uchuu(stat_str)
+      config_uchuu(stat_str)
       config_unit(stat_str)
 
 
@@ -120,10 +121,10 @@ def config_unit(stat_str):
     comb_tag = '_smoothboth'+infl_tag
     cov_tag_extra = ''
 
-    config_tag = f'{mock_tag}{cov_tag_extra}{comb_tag}'
-    #config_tag = f'{mock_tag}{cov_tag_extra}{comb_tag}_wpximaxscale6'
+    #config_tag = f'{mock_tag}{cov_tag_extra}{comb_tag}'
+    config_tag = f'{mock_tag}{cov_tag_extra}{comb_tag}_wpximaxscale6'
 
-    param_tag = ''
+    param_tag = '_fixwOmegab'
     save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{data_tag}{param_tag}{config_tag}.h5'
 
     emu_names = [utils.get_fiducial_emu_name(statistic) for statistic in statistics]
@@ -173,8 +174,8 @@ def config_uchuu(stat_str):
     comb_tag = '_smoothboth'+infl_tag
     #comb_tag = '_smooth'+infl_tag
     #comb_tag = '_smooth_covnegfix'+infl_tag
-    cov_tag_extra = '_uchuuchi2nclosest2000'
-    #cov_tag_extra = ''
+    #cov_tag_extra = '_uchuuchi2nclosest2000'
+    cov_tag_extra = ''
     #config_tag = f'{mock_tag}{cov_tag_extra}_smoothemuboth{infl_tag}_wpxiupfmaxscale6'
     #config_tag = f'{mock_tag}{cov_tag_extra}_smoothemu{infl_tag}_wpximaxscale6'
     config_tag = f'{mock_tag}{cov_tag_extra}{comb_tag}_wpximaxscale6'
@@ -182,7 +183,7 @@ def config_uchuu(stat_str):
     #config_tag = f'_Msatmocks_upfmaxscale6_covglamsmooth_boundsingle{cov_tag_extra}{infl_tag}'
     #config_tag = '_Msatmocks_wpmaxscale6'
 
-    param_tag = ''
+    param_tag = '_fixwOmegab'
     #param_tag = '_fixgammaf'
     #param_tag = '_hodparams'
     save_fn = f'/home/users/ksf293/aemulator/chains/param_files/chain_params_{stat_str}{data_tag}{param_tag}{config_tag}.h5'
@@ -421,6 +422,41 @@ def get_param_names(param_tag, mock_name_train):
         hod_param_names, _ = utils.load_hod_params(mock_name_train)
         param_names_vary = cosmo_param_names + hod_param_names
         param_names_vary.remove('f')
+    elif param_tag=='_fixwhNeff':
+        cosmo_param_names, _ = utils.load_cosmo_params(mock_name_train)
+        hod_param_names, _ = utils.load_hod_params(mock_name_train)
+        param_names_vary = cosmo_param_names + hod_param_names
+        param_names_vary.remove('w')
+        param_names_vary.remove('h')
+        param_names_vary.remove('N_eff')
+    elif param_tag=='_fixwNeff':
+        cosmo_param_names, _ = utils.load_cosmo_params(mock_name_train)
+        hod_param_names, _ = utils.load_hod_params(mock_name_train)
+        param_names_vary = cosmo_param_names + hod_param_names
+        param_names_vary.remove('w')
+        param_names_vary.remove('N_eff')    
+    elif param_tag=='_fixwh':
+        cosmo_param_names, _ = utils.load_cosmo_params(mock_name_train)
+        hod_param_names, _ = utils.load_hod_params(mock_name_train)
+        param_names_vary = cosmo_param_names + hod_param_names
+        param_names_vary.remove('w')
+        param_names_vary.remove('h')
+    elif param_tag=='_fixw':
+        cosmo_param_names, _ = utils.load_cosmo_params(mock_name_train)
+        hod_param_names, _ = utils.load_hod_params(mock_name_train)
+        param_names_vary = cosmo_param_names + hod_param_names
+        param_names_vary.remove('w')
+    elif param_tag=='_fixh':
+        cosmo_param_names, _ = utils.load_cosmo_params(mock_name_train)
+        hod_param_names, _ = utils.load_hod_params(mock_name_train)
+        param_names_vary = cosmo_param_names + hod_param_names
+        param_names_vary.remove('h')
+    elif param_tag=='_fixwOmegab':
+        cosmo_param_names, _ = utils.load_cosmo_params(mock_name_train)
+        hod_param_names, _ = utils.load_hod_params(mock_name_train)
+        param_names_vary = cosmo_param_names + hod_param_names
+        param_names_vary.remove('w')
+        param_names_vary.remove('Omega_b')
     else:
         raise ValueError("What to use for param_names_vary??")
     return param_names_vary
