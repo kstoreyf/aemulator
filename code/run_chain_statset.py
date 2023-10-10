@@ -14,14 +14,15 @@ def main(cosmo, hod, mode, config_tag='', param_tag=''):
     #stat_strs = np.array(['xi', 'xi2', 'upf', 'mcf'])
     #stat_strs = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
     #stat_strs = np.concatenate((stat_strs, ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2_mcf']))
-    stat_strs = ['wp_xi_xi2_mcf']
+    #stat_strs = ['wp_xi_xi2_mcf']
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf', 'wp_xi_xi2_upf_mcf']
-    #stat_strs = np.array(['wp'])
+    stat_strs = np.array(['xi'])
     data_name = 'aemulus_fmaxmocks_test'
     data_tag = '_'+data_name
 
-    overwrite_param_file = True
-    print("OVERWRITE PARAM FILE TRUE, U SURE?")
+    overwrite_param_file = False
+    #overwrite_param_file = True
+    #print("OVERWRITE PARAM FILE TRUE, U SURE?")
     
     for stat_str in stat_strs:
         print(f'Running chain for stat_str={stat_str} (cosmo {cosmo}, hod {hod})')

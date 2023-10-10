@@ -14,7 +14,10 @@ def main():
     #generate_single_mock(stat_strs, (6,69), config_tag='_minscale0_covemuperf')
     #generate_single_mock(stat_strs, (6,66), config_tag='_minscale0_covemuperf')
 
-    #generate_recovery_set(stat_strs)
+    #70-model recovery set
+    stat_strs = ['xi']
+    config_tag = '_minscale0_ximaxscale6'
+    generate_recovery_set(stat_strs, config_tag=config_tag)
     #config_prior()
 
     # plusminus number density tests
@@ -24,6 +27,7 @@ def main():
     # generate_single_mock(stat_strs, id_pair, config_tag='_minscale0_wpximaxscale6', data_name='aemulus_fmaxmocks_test_plus1')
     #generate_single_mock(stat_strs, id_pair, config_tag='_minscale0_allmaxscale6', data_name='aemulus_fmaxmocks_test')
 
+    # scale analysis
     #stat_strs = np.loadtxt('../tables/statistic_sets_scale_analysis.txt', dtype=str)
     #stat_strs = ['wp_xi_xi2_mcf']
     #generate_scale_analysis_set(stat_strs, mode='minscales')
@@ -44,12 +48,12 @@ def main():
     #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf', 'wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']
     #stat_strs = ['wp_xi_xi2_upf_mcf', 'wp_xi_xi2']
     #stat_strs = ['wp', 'wp_xi_xi2', 'wp_upf_mcf', 'wp_xi_xi2_upf_mcf']
-    stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']
+    #stat_strs = ['wp_xi_xi2', 'wp_xi_xi2_upf_mcf']
     #stat_strs = ['wp_xi_xi2']
     #stat_strs = ['wp_mcf']
-    for stat_str in stat_strs:
-      config_uchuu(stat_str)
-      config_unit(stat_str)
+    # for stat_str in stat_strs:
+    #   config_uchuu(stat_str)
+    #   config_unit(stat_str)
 
 
 def generate_single_mock(stat_strs, id_pair, config_tag='_minscale0',
@@ -210,71 +214,7 @@ def config_uchuu(stat_str):
     param_names_vary = get_param_names(param_tag, mock_name_train)
     seed = np.random.randint(1000)
 
-    if 'wpmaxscale6' in config_tag:
-        bins = []
-        for i in range(len(statistics)):
-            if 'wp' in statistics[i]: #writing this way to include "wp80"
-                bins.append(list(range(0, 7)))
-            else:
-                bins.append(list(range(0, 9)))
-    if 'wponehalo' in config_tag:
-        bins = []
-        for i in range(len(statistics)):
-            if 'wp' in statistics[i]: #writing this way to include "wp80"
-                bins.append(list(range(0, 4)))
-            else:
-                bins.append(list(range(0, 9)))
-    elif 'wpximaxscale6' in config_tag:
-        bins = []
-        for i in range(len(statistics)):
-            #writing this way for wp to include "wp80", but not for xi bc of xi2
-            if 'wp' in statistics[i] or statistics[i]=='xi': 
-                bins.append(list(range(0, 7)))
-            else:
-                bins.append(list(range(0, 9)))
-    elif 'wpxiupfmaxscale6' in config_tag:
-        bins = []
-        for i in range(len(statistics)):
-            #writing this way for wp to include "wp80", but not for xi bc of xi2
-            if 'wp' in statistics[i] or statistics[i]=='xi' or statistics[i]=='upf': 
-                bins.append(list(range(0, 7)))
-            else:
-                bins.append(list(range(0, 9)))
-    elif 'upfmaxscale6' in config_tag:
-        bins = []
-        for i in range(len(statistics)):
-            if statistics[i]=='upf':
-                bins.append(list(range(0, 7)))
-            else:
-                bins.append(list(range(0, 9)))
-    elif 'upfmaxscale0' in config_tag:
-        bins = []
-        for i in range(len(statistics)):
-            if statistics[i]=='upf':
-                bins.append([0])
-            else:
-                bins.append(list(range(0, 9)))
-    elif 'allmaxscale6' in config_tag:
-        bins = [list(range(0, 7))]*len(statistics)
-    elif 'onehalo' in config_tag:
-        bins = []
-        for i in range(len(statistics)):
-            if statistics[i]=='upf':
-                if 'upfandonehalo' in config_tag:
-                    bins.append(list(range(0, 9)))
-                else:
-                    bins.append([])
-            else:
-                bins.append(list(range(0, 4)))
-    elif 'twohalo' in config_tag:
-        bins = []
-        for i in range(len(statistics)):
-            if statistics[i]=='upf':
-                bins.append(list(range(0, 9)))
-            else:
-                bins.append(list(range(4, 9)))
-    else:
-        bins = [list(range(0, 9))]*len(statistics)
+    bins = get_bins(statistics, config_tag)
     
     contents = populate_config_blank(save_fn, statistics, emu_names, scalings, train_tags_extra,
                         mock_name_train, mock_name_test,
@@ -322,25 +262,8 @@ def config_aemulus(stat_str, cosmo, hod, config_tag='', param_tag='', bins=None,
 
     # if it isn't None, we've passed it in and take that!
     if bins is None:
-        if 'wpmaxscale6' in config_tag:
-            bins = []
-            for i in range(len(statistics)):
-                if 'wp' in statistics[i]:
-                    bins.append(list(range(0, 7)))
-                else:
-                    bins.append(list(range(0, 9)))
-        elif 'wpximaxscale6' in config_tag:
-            bins = []
-            for i in range(len(statistics)):
-                if 'wp' in statistics[i] or statistics[i]=='xi':
-                    bins.append(list(range(0, 7)))
-                else:
-                    bins.append(list(range(0, 9)))
-        elif 'allmaxscale6' in config_tag:
-            bins = [list(range(0, 7))]*len(statistics)
-        else:
-            bins = [list(range(0, 9))]*len(statistics)
-    
+        bins = get_bins(statistics, config_tag)
+
     contents = populate_config_blank(save_fn, statistics, emu_names, scalings, train_tags_extra,
                         mock_name_train, mock_name_test,
                         chain_results_fn, n_threads, dlogz_str, 
@@ -491,7 +414,7 @@ def recovery_set():
     #stat_strs = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
     #stat_strs = np.concatenate((stat_strs, ['wp_xi_xi2_mcf']))
     #stat_strs = np.concatenate((stat_strs, ['wp_xi_xi2_mcf', 'wp_xi_xi2_upf_mcf']))
-    stat_strs = np.array(['wp80'])
+    stat_strs = np.array(['xi'])
     config_tag = '_minscale0'
     #config_tag = '_wpmaxscale6'
     #config_tag = '_largescales'
@@ -595,7 +518,14 @@ def get_bins(statistics, config_tag):
                 bins.append(list(range(0, 7)))
             else:
                 bins.append(list(range(0, 9)))
-    if 'wponehalo' in config_tag:
+    elif 'ximaxscale6' in config_tag:
+        bins = []
+        for i in range(len(statistics)):
+            if statistics[i]=='xi':
+                bins.append(list(range(0, 7)))
+            else:
+                bins.append(list(range(0, 9)))
+    elif 'wponehalo' in config_tag:
         bins = []
         for i in range(len(statistics)):
             if 'wp' in statistics[i]: #writing this way to include "wp80"

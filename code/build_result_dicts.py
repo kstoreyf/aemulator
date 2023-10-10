@@ -6,8 +6,8 @@ import utils
 
 
 def main():
-    #run()
-    run_scale_dicts()
+    run()
+    #run_scale_dicts()
     #run_single()
     #run_scale_dicts_addin()
 
@@ -28,20 +28,26 @@ def run():
     data_tag = '_aemulus_fmaxmocks_test'
     #config_tag = '_minscale0'
 
+    stat_strs_single = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str)
+    stat_strs_addin = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
+    stat_strs_addin_full = np.concatenate((['wp'], stat_strs_addin))
+
     # single and addin
-    # stat_strs_single = np.loadtxt('../tables/statistic_sets_single.txt', dtype=str)
     # fn_results_dict_single = f'{results_dict_dir}/results_dict_single.npy'
     # build_dict(stat_strs_single, id_pairs, data_tag, config_tag, fn_results_dict_single)
 
-    stat_strs_addin = np.loadtxt('../tables/statistic_sets_addin.txt', dtype=str)
-    stat_strs_addin_full = np.concatenate((['wp'], stat_strs_addin))
     #fn_results_dict_addin_full = f'{results_dict_dir}/results_dict_addin_full.npy'
     #build_dict(stat_strs_addin_full, id_pairs, data_tag, config_tag, fn_results_dict_addin_full)
 
-    fn_results_dict_wpximaxscale = f'{results_dict_dir}/results_dict_wpximaxscale6.npy'
+    fn_results_dict_single_wpximaxscale = f'{results_dict_dir}/results_dict_single_wpximaxscale6.npy'
     config_tag = '_minscale0'
     print(config_tag)
-    build_dict(stat_strs_addin_full, id_pairs, data_tag, config_tag, fn_results_dict_wpximaxscale)
+    build_dict(stat_strs_single, id_pairs, data_tag, config_tag, fn_results_dict_single_wpximaxscale)
+
+    # fn_results_dict_wpximaxscale = f'{results_dict_dir}/results_dict_wpximaxscale6.npy'
+    # config_tag = '_minscale0'
+    # print(config_tag)
+    # build_dict(stat_strs_addin_full, id_pairs, data_tag, config_tag, fn_results_dict_wpximaxscale)
 
 
 def run_scale_dicts():
@@ -103,15 +109,20 @@ def build_dict(stat_strs, id_pairs, data_tag, config_tag, fn_results_dict,
         print(stat_str)
         for id_pair in id_pairs:
             id_cosmo, id_hod = id_pair
-            print('config tag2:', config_tag)
-            print('wpximaxscale6' in config_tag)
-            print('wpximaxscale6' in config_tag)
-            print(stat_str=='wp')
-            print('xi' in stat_str.split('_'))
+            # print('config tag2:', config_tag)
+            # print('wpximaxscale6' in config_tag)
+            # print('wpximaxscale6' in config_tag)
+            # print(stat_str=='wp')
+            # print('xi' in stat_str.split('_'))
             if 'wpximaxscale6' in fn_results_dict and stat_str=='wp':
                 chaintag = f'{stat_str}{data_tag}_c{id_cosmo}h{id_hod}{param_tag}{config_tag}_wpmaxscale6'
+            elif 'wpximaxscale6' in fn_results_dict and stat_str=='xi':
+                chaintag = f'{stat_str}{data_tag}_c{id_cosmo}h{id_hod}{param_tag}{config_tag}_ximaxscale6'
             elif 'wpximaxscale6' in fn_results_dict and 'xi' in stat_str.split('_'):
                 chaintag = f'{stat_str}{data_tag}_c{id_cosmo}h{id_hod}{param_tag}{config_tag}_wpximaxscale6'
+            else:
+                chaintag = f'{stat_str}{data_tag}_c{id_cosmo}h{id_hod}{param_tag}{config_tag}'
+            print(chaintag)
             results_dict[stat_str][tuple(id_pair)] = utils.construct_results_dict(chaintag)
     np.save(fn_results_dict, results_dict)
     print("Built and saved!")

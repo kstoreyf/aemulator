@@ -238,6 +238,8 @@ def plot_accuracy_figure(statistics, train_tags, mock_tag_test='_aemulus_test',
         err_frac_inner68 = (err_frac_p84 - err_frac_p16)/2.0
         #axarr[2].plot(r_vals, err_frac_mean, color='blue', label='error (stdev of fractional error)')
         #axarr[2].plot(r_vals, err_frac_inner68, color='blue', label='emulator error (inner 68%)')
+        print(statistic)
+        print("err sym:", err_frac_inner68)
         axarr[2].plot(r_vals, err_frac_p16, color='black', label='Emulator error (inner 68%)')
         axarr[2].plot(r_vals, err_frac_p84, color='black')
 
@@ -734,6 +736,7 @@ def plot_scale_dependence_figure(scales, results_dicts, prior_dict, params_toplo
             label_xticks = False
             if i==(nrows-1):
                 label_xticks = True
+            print(params_toplot[count])
             plot_scale_dependence(axarr[i,j], scales, results_dicts, prior_dict, params_toplot[count], 
                                   stat_strs_toplot, id_pair, labels, colors, 
                                   rotation=rotation, label_xticks=label_xticks,
@@ -800,6 +803,7 @@ def plot_scale_dependence(ax, scales, results_dicts, prior_dict, param_toplot, s
             ax.plot(r_intersect, y_intersect, marker='|', markersize=20, color=colors[s])
             #ax.plot(rlog, 1/uncertainties_scales_comp, marker='None', color=colors[s], 
             #        ls=lss[s], lw=lws[s], alpha=0.5)
+            print(f'{stat_str}, {r_intersect:.2f}')
             
     if show_top_axis:
         ax_t = ax.twiny()  # instantiate a second axes that shares the same x-axis

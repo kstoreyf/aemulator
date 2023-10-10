@@ -476,27 +476,32 @@ def print_uncertainty_results_abstract(results_dict, params, id_pairs, prior_dic
         print(f"Prior: {uncertainty_prior:.4f}")
         
         stat_str_wp = 'wp'
+        stat_str_xi = 'xi'
         stat_str_standard = 'wp_xi_xi2'
         stat_str_incl_density = 'wp_xi_xi2_upf_mcf'
-        stat_strs = [stat_str_wp, stat_str_standard, stat_str_incl_density]
-        
+        stat_strs = [stat_str_wp, stat_str_xi, stat_str_standard, stat_str_incl_density]
+        uncertainty_dict = {}
+
         uncertainties_stat_strs = []
         for stat_str in stat_strs:
+            if stat_str not in results_dict.keys():
+                continue
             uncertainties_id_pairs = []
             for _, id_pair in enumerate(id_pairs):
                 #print(stat_str)
                 #print(results_dict[stat_str])
                 uncertainties_id_pairs.append(results_dict[stat_str][tuple(id_pair)][pn]['uncertainty'])
             uncertainty = np.mean(uncertainties_id_pairs)
-            uncertainties_stat_strs.append(uncertainty)
+            uncertainty_dict[stat_str] = uncertainty
             print(f"{stat_str}: {uncertainty:.4f}")
 
-        idx_standard = stat_strs.index(stat_str_standard)
-        idx_incl_density = stat_strs.index(stat_str_incl_density)
-        uncertainty_change = (uncertainties_stat_strs[idx_incl_density]-uncertainties_stat_strs[idx_standard])/uncertainties_stat_strs[idx_standard]
-        increased_precision = -uncertainty_change
-        print(f"Increased precision from standard to beyond by: {100*increased_precision:.1f}%")
-        print()
+        # idx_standard = stat_strs.index(stat_str_standard)
+        # idx_incl_density = stat_strs.index(stat_str_incl_density)
+        if stat_str_incl_density in uncertainty_dict and stat_str_standard in uncertainty_dict:
+            uncertainty_change = (uncertainty_dict[stat_str_incl_density]-uncertainty_dict[stat_str_standard])/uncertainty_dict[stat_str_standard]
+            increased_precision = -uncertainty_change
+            print(f"Increased precision from standard to beyond by: {100*increased_precision:.1f}%")
+            print()
 
 
 def print_uncertainty_results_mock(results_dict, params, prior_dict):
@@ -522,6 +527,83 @@ def print_uncertainty_results_mock(results_dict, params, prior_dict):
         increased_precision = -uncertainty_change
         print(f"Increased precision from standard to beyond by: {100*increased_precision:.1f}%")
         print()
+
+
+def print_errors_mock(result_dict, stat_strs, param_names):
+    for param_name in param_names:
+        print(param_name)
+        for stat_str in stat_strs:
+            error = result_dict[stat_str][param_name]['median'] - result_dict[stat_str][param_name]['truth']
+            error_sig = error / result_dict[stat_str][param_name]['uncertainty']
+            print(f'{stat_str}: {error_sig:.2f}')
+
+
+def build_emu_dict(chaintag):
+    # rebuild emus
+    #emus = [None]*n_stats
+    print("Building emulators")
+    chain_params_fn = f'../chains/param_files/chain_params_{chaintag}.h5'
+    with h5py.File(chain_params_fn, 'r+') as f:
+
+        mock_name_test = f.attrs['mock_name_test']
+        mock_name_train = f.attrs['mock_name_train']
+        data_name = f.attrs['data_name']
+
+        statistics = f.attrs['statistics']
+        print(statistics)
+        emu_names = f.attrs['emu_names']
+        scalings = f.attrs['scalings']
+        if 'bins' in f.keys():
+            bins = [list(b_arr) for b_arr in f['bins']]
+        else:
+            bins = f.attrs['bins']
+        train_tags_extra = f.attrs['train_tags_extra']
+
+    emu_dict = {}
+    for i, statistic in enumerate(statistics):
+        Emu = get_emu(emu_names[i])
+
+        train_tag = f'_{emu_names[i]}_{scalings[i]}{train_tags_extra[i]}'
+        models_dir = '/mount/sirocco1/ksf293/aemulator/models'
+        model_fn = f'{models_dir}/model_{statistic}{train_tag}' #emu will add proper file ending
+        scaler_x_fn = f'{models_dir}/scaler_x_{statistic}{train_tag}.joblib'
+        scaler_y_fn = f'{models_dir}/scaler_y_{statistic}{train_tag}.joblib'
+        err_fn = f"../covariances/stdev_{mock_name_test}_{statistic}_hod3_test0.dat"
+        #err_fn = f"../../clust/covariances/error_aemulus_{statistic}_hod3_test0.dat"
+
+        id_tag = ''
+        if 'fmaxmocks_uchuuchi2nclosest2000' in train_tags_extra[i]:
+            id_tag = '_aemulus_fmaxmocks_uchuuchi2nclosest2000'
+                    
+        emu = Emu(statistic, scalings[i], model_fn, scaler_x_fn, scaler_y_fn, err_fn, 
+                #bins=bins[i], 
+                predict_mode=True, mock_name_train=mock_name_train,
+                id_tag=id_tag)
+        emu.load_model()
+        emu_dict[statistic] = emu
+        print(f"Emulator for {statistic} built with train_tag {train_tag}")
+
+    return emu_dict
+
+
+def print_rchi2(chaintag):
+    chain_fn = f'../chains/param_files/chain_params_{chaintag}.h5'
+    with h5py.File(chain_fn, 'r') as f:
+        cov_fn = f.attrs['cov_fn']
+    cov = np.loadtxt(cov_fn)
+    variances = np.diag(cov)
+
+    #variances from cov are fractional!
+    emu_dict = build_emu_dict(chaintag)
+    rs, ys_true, ys_pred_best = get_best_fit(chaintag, emu_dict)
+    ys_true_flat = np.array( ys_true).flatten()
+    ys_pred_flat = np.array(ys_pred_best).flatten()
+    print(len(ys_pred_flat))
+    variances_nonfrac = variances*(ys_true_flat**2)
+
+    deg_freedom = get_deg_of_freedom(chaintag) 
+    rchi2 = reduced_chi2(ys_true_flat, ys_pred_flat, variances_nonfrac, deg_freedom)
+    print("Reduced chi2:", rchi2)
 
 
 def load_statistics(statistic, mock_name, id_pairs, verbose=False):
@@ -685,8 +767,14 @@ def get_best_fit(chaintag, emu_dict, data_tag_aem=None, return_pred_on_true_para
     f = h5py.File(chain_fn, 'r')
     param_names = f.attrs['param_names_vary']
     params_true = f.attrs['true_values']
+    print(f.attrs.keys())
+    param_names_fixed = f.attrs['fixed_param_names']
+    params_fixed = f.attrs['fixed_param_values']
+    print(params_fixed)
+    print(params_true)
     
     param_dict = dict(zip(param_names, params_best)) 
+    param_dict.update(dict(zip(param_names_fixed, params_fixed)))
     print(param_names)
     print(params_best)
 
@@ -756,7 +844,9 @@ def get_deg_of_freedom(chaintag):
     #bin_arr = np.vstack(f['bins'])
     #n_obs = len(bin_arr.flatten())
     f.close()
-    return n_obs - m_params
+    dof = n_obs - m_params
+    print("DOF:", dof)
+    return dof
 
 
 def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
